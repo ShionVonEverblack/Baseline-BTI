@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Deteksi Dini Risiko Akademik Siswa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E161F;
+    --panel:#161F2B;
+    --panel-2:#1C2733;
+    --line:rgba(255,255,255,0.08);
+    --line-soft:rgba(255,255,255,0.05);
+    --text:#E8EEF3;
+    --text-dim:#8CA0B3;
+    --text-faint:#5A6B7C;
+    --safe:#39D6A0;
+    --safe-bg:rgba(57,214,160,0.12);
+    --watch:#F3B94D;
+    --watch-bg:rgba(243,185,77,0.12);
+    --risk:#F1594E;
+    --risk-bg:rgba(241,89,78,0.13);
+    --signal:#4EA6FF;
+    --radius:12px;
+    --radius-lg:16px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(78,166,255,0.08), transparent 45%),
+      radial-gradient(circle at 100% 20%, rgba(57,214,160,0.06), transparent 40%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 24px 70px;
+  }
+  .wrap{max-width:1240px; margin:0 auto;}
+
+  /* ---------- header ---------- */
+  header.top{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:18px;
+    margin-bottom:24px;
+    padding-bottom:20px;
+    border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    letter-spacing:.16em;
+    text-transform:uppercase;
+    color:var(--signal);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .eyebrow .dot{
+    width:7px; height:7px; border-radius:50%;
+    background:var(--safe);
+    box-shadow:0 0 0 3px rgba(57,214,160,0.18);
+    animation:pulse 2.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1;} 50%{opacity:.4;}
+  }
+  h1{
+    font-family:'Sora', sans-serif;
+    font-weight:700;
+    font-size:clamp(24px,3vw,32px);
+    margin:0 0 6px;
+    letter-spacing:-.01em;
+  }
+  .sub{color:var(--text-dim); font-size:14px; max-width:520px; line-height:1.5;}
+
+  .top-stats{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .stat-pill{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:10px 16px;
+    min-width:96px;
+    text-align:center;
+  }
+  .stat-pill .n{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:22px;
+    font-weight:600;
+    line-height:1;
+  }
+  .stat-pill .l{
+    font-size:10.5px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-top:6px;
+  }
+  .stat-pill.safe .n{color:var(--safe);}
+  .stat-pill.watch .n{color:var(--watch);}
+  .stat-pill.risk .n{color:var(--risk);}
+
+  /* ---------- layout ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:320px 1fr;
+    gap:22px;
+    align-items:start;
+  }
+  @media (max-width:920px){
+    .grid{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    padding:20px;
+  }
+  .panel + .panel{margin-top:20px;}
+
+  .panel-title{
+    font-family:'Sora', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    margin:0 0 4px;
+  }
+  .panel-desc{
+    font-size:12.5px;
+    color:var(--text-dim);
+    margin:0 0 16px;
+    line-height:1.5;
+  }
+
+  /* ---------- form ---------- */
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .field input, .field select{
+    width:100%;
+    background:var(--panel-2);
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:9px 11px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .field input:focus, .field select:focus{border-color:var(--signal);}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+  .hint-text{font-size:11px; color:var(--text-faint); margin-top:4px;}
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border:none;
+    border-radius:9px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:transform .1s ease, filter .15s ease, background .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--signal); color:#06131F;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--text); border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--text-dim);}
+  .btn-full{width:100%;}
+  .btn-row{display:flex; gap:10px; margin-top:6px;}
+  .btn-row .btn{flex:1;}
+
+  /* ---------- filters ---------- */
+  .filter-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .filter-row select, .filter-row input{
+    background:var(--panel-2);
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:8px 12px;
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+  .filter-row input{flex:1; min-width:160px;}
+  .filter-row select:focus, .filter-row input:focus{border-color:var(--signal);}
+
+  /* ---------- student cards ---------- */
+  .student-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));
+    gap:14px;
+  }
+  .s-card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    cursor:pointer;
+    transition:border-color .15s ease, transform .12s ease;
+  }
+  .s-card:hover{border-color:var(--signal); transform:translateY(-2px);}
+  .s-card-top{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    margin-bottom:12px;
+  }
+  .s-name{font-weight:600; font-size:14.5px;}
+  .s-class{font-size:11.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace;}
+  .badge{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    padding:3px 8px;
+    border-radius:20px;
+    font-weight:600;
+    margin-left:auto;
+    white-space:nowrap;
+  }
+  .badge.safe{background:var(--safe-bg); color:var(--safe);}
+  .badge.watch{background:var(--watch-bg); color:var(--watch);}
+  .badge.risk{background:var(--risk-bg); color:var(--risk);}
+
+  .mini-bars{display:flex; flex-direction:column; gap:6px;}
+  .mini-bar-row{display:flex; align-items:center; gap:8px;}
+  .mini-bar-label{font-size:10.5px; color:var(--text-dim); width:76px; flex-shrink:0;}
+  .mini-bar-track{flex:1; height:5px; background:rgba(255,255,255,0.07); border-radius:4px; overflow:hidden;}
+  .mini-bar-fill{height:100%; border-radius:4px;}
+  .mini-bar-val{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--text-dim); width:34px; text-align:right;}
+
+  /* ---------- empty ---------- */
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--text-dim);
+  }
+  .empty-state .glyph{font-size:30px; margin-bottom:10px; color:var(--text-faint);}
+  .empty-state p{font-size:13.5px; max-width:340px; margin:6px auto 0; line-height:1.6;}
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(6,12,18,0.72);
+    backdrop-filter:blur(3px);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius-lg);
+    max-width:560px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:26px;
+    position:relative;
+  }
+  .modal-close{
+    position:absolute; top:16px; right:16px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text-dim);
+    width:30px; height:30px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+  }
+  .modal-close:hover{color:var(--text);}
+  .modal-head{
+    display:flex;
+    gap:16px;
+    align-items:center;
+    margin-bottom:20px;
+  }
+  .modal-name{font-family:'Sora',sans-serif; font-weight:700; font-size:20px;}
+  .modal-class{font-size:12.5px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; margin-top:2px;}
+
+  .factor-block{margin-bottom:16px;}
+  .factor-title{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:8px; font-family:'IBM Plex Mono',monospace;}
+  .rec-box{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-left:3px solid var(--signal);
+    border-radius:8px;
+    padding:14px 16px;
+    font-size:13.5px;
+    line-height:1.65;
+    color:#CBD8E2;
+  }
+  .rec-box.watch{border-left-color:var(--watch);}
+  .rec-box.risk{border-left-color:var(--risk);}
+  .rec-list{margin:8px 0 0; padding-left:18px;}
+  .rec-list li{margin-bottom:6px;}
+
+  footer.hint{
+    text-align:center;
+    font-size:12px;
+    color:var(--text-faint);
+    margin-top:30px;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Sistem Peringatan Dini &middot; Live</div>
+      <h1>Dashboard Deteksi Dini Risiko Akademik Siswa</h1>
+      <p class="sub">Pantau kehadiran, nilai, tugas, dan tren belajar setiap siswa untuk mendeteksi risiko akademik sebelum menjadi masalah besar.</p>
+    </div>
+    <div class="top-stats" id="topStats"></div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: form + filters -->
+    <div>
+      <div class="panel">
+        <h2 class="panel-title">Tambah Data Siswa</h2>
+        <p class="panel-desc">Masukkan data terbaru untuk menghitung skor risiko secara otomatis.</p>
+
+        <div class="field">
+          <label for="fName">Nama siswa</label>
+          <input type="text" id="fName" placeholder="Contoh: Rangga Pratama">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="fClass">Kelas</label>
+            <input type="text" id="fClass" placeholder="Contoh: X IPA 2">
+          </div>
+          <div class="field">
+            <label for="fAttendance">Kehadiran (%)</label>
+            <input type="number" id="fAttendance" min="0" max="100" placeholder="0-100">
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="fGrade">Rata-rata nilai</label>
+            <input type="number" id="fGrade" min="0" max="100" placeholder="0-100">
+          </div>
+          <div class="field">
+            <label for="fMissing">Tugas belum dikumpulkan</label>
+            <input type="number" id="fMissing" min="0" placeholder="jumlah">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="fTrend">Tren nilai (3 penilaian terakhir)</label>
+          <select id="fTrend">
+            <option value="naik">Meningkat</option>
+            <option value="stabil" selected>Stabil</option>
+            <option value="turun">Menurun</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btnAdd">Hitung &amp; Tambahkan</button>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btnSample">Muat Contoh Data</button>
+          <button class="btn btn-ghost" id="btnClearAll">Hapus Semua</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Ekspor Laporan</h2>
+        <p class="panel-desc">Unduh ringkasan seluruh siswa beserta kategori risikonya.</p>
+        <button class="btn btn-ghost btn-full" id="btnExport">Unduh Laporan .csv</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: dashboard -->
+    <div class="panel">
+      <div class="filter-row">
+        <input type="text" id="searchInput" placeholder="Cari nama siswa...">
+        <select id="filterClass">
+          <option value="">Semua kelas</option>
+        </select>
+        <select id="filterLevel">
+          <option value="">Semua status</option>
+          <option value="safe">Aman</option>
+          <option value="watch">Waspada</option>
+          <option value="risk">Berisiko Tinggi</option>
+        </select>
+        <select id="sortBy">
+          <option value="risk-desc">Urutkan: Risiko tertinggi</option>
+          <option value="risk-asc">Urutkan: Risiko terendah</option>
+          <option value="name-asc">Urutkan: Nama A-Z</option>
+        </select>
+      </div>
+
+      <div id="studentGrid" class="student-grid"></div>
+    </div>
+  </div>
+
+  <footer class="hint">Perhitungan risiko berjalan sepenuhnya di peramban ini. Data tidak tersimpan permanen — unduh laporan sebelum menutup halaman.</footer>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var $ = function(id){ return document.getElementById(id); };
+  var students = []; // {id, name, class, attendance, grade, missing, trend}
+  var uid = 1;
+
+  // ---------- risk engine ----------
+  function computeRisk(s){
+    var attendanceRisk = clamp(100 - s.attendance, 0, 100);
+    var gradeRisk = clamp(100 - s.grade, 0, 100);
+    var missingRisk = clamp(s.missing * 12, 0, 100);
+    var trendRisk = s.trend === "turun" ? 65 : (s.trend === "stabil" ? 20 : 0);
+
+    var composite = attendanceRisk * 0.35 + gradeRisk * 0.35 + missingRisk * 0.20 + trendRisk * 0.10;
+    composite = Math.round(clamp(composite, 0, 100));
+
+    var level = composite >= 67 ? "risk" : (composite >= 34 ? "watch" : "safe");
+
+    return {
+      composite: composite,
+      level: level,
+      factors: {
+        attendanceRisk: Math.round(attendanceRisk),
+        gradeRisk: Math.round(gradeRisk),
+        missingRisk: Math.round(missingRisk),
+        trendRisk: Math.round(trendRisk)
+      }
+    };
+  }
+
+  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+  function levelLabel(level){
+    return level === "risk" ? "Berisiko Tinggi" : (level === "watch" ? "Waspada" : "Aman");
+  }
+  function levelColor(level){
+    return level === "risk" ? "var(--risk)" : (level === "watch" ? "var(--watch)" : "var(--safe)");
+  }
+
+  // ---------- gauge SVG ----------
+  function gaugeSVG(score, level, size){
+    size = size || 56;
+    var stroke = 6;
+    var r = (size - stroke) / 2;
+    var c = 2 * Math.PI * r;
+    var offset = c * (1 - score / 100);
+    var color = level === "risk" ? "#F1594E" : (level === "watch" ? "#F3B94D" : "#39D6A0");
+    var center = size / 2;
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+      '<circle cx="' + center + '" cy="' + center + '" r="' + r + '" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="' + stroke + '"/>' +
+      '<circle cx="' + center + '" cy="' + center + '" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="' + stroke + '" ' +
+        'stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '" stroke-linecap="round" ' +
+        'transform="rotate(-90 ' + center + ' ' + center + ')"/>' +
+      '<text x="' + center + '" y="' + (center + 4) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="' + (size*0.28) + '" font-weight="600" fill="#E8EEF3">' + score + '</text>' +
+    '</svg>';
+  }
+
+  // ---------- recommendations ----------
+  function buildRecommendation(s, risk){
+    var f = risk.factors;
+    var items = [];
+    if(f.attendanceRisk >= 40) items.push("Hubungi wali murid untuk menelusuri penyebab ketidakhadiran dan susun kesepakatan kehadiran.");
+    if(f.gradeRisk >= 40) items.push("Jadwalkan sesi bimbingan tambahan atau remedial pada mata pelajaran dengan nilai rendah.");
+    if(f.missingRisk >= 30) items.push("Buat rencana penyelesaian tugas tertunda dengan tenggat yang jelas dan dipantau berkala.");
+    if(f.trendRisk >= 50) items.push("Lakukan sesi konseling singkat untuk memahami perubahan performa akhir-akhir ini.");
+    if(items.length === 0) items.push("Pertahankan pola belajar saat ini dan berikan apresiasi atas konsistensi performa.");
+    return items;
+  }
+
+  function summaryText(level){
+    if(level === "risk") return "Siswa ini menunjukkan beberapa indikator risiko akademik yang signifikan. Disarankan tindak lanjut dalam 1 minggu ke depan.";
+    if(level === "watch") return "Beberapa indikator mulai menunjukkan penurunan. Perlu dipantau lebih dekat agar tidak memburuk.";
+    return "Secara umum performa siswa berada dalam kondisi baik dan stabil.";
+  }
+
+  // ---------- render top stats ----------
+  function renderTopStats(){
+    var total = students.length;
+    var safeCount = students.filter(function(s){ return s._risk.level === "safe"; }).length;
+    var watchCount = students.filter(function(s){ return s._risk.level === "watch"; }).length;
+    var riskCount = students.filter(function(s){ return s._risk.level === "risk"; }).length;
+
+    $("topStats").innerHTML =
+      pill(total, "Total Siswa", "") +
+      pill(safeCount, "Aman", "safe") +
+      pill(watchCount, "Waspada", "watch") +
+      pill(riskCount, "Berisiko", "risk");
+  }
+  function pill(n, label, cls){
+    return '<div class="stat-pill ' + cls + '"><div class="n">' + n + '</div><div class="l">' + label + '</div></div>';
+  }
+
+  // ---------- filters population ----------
+  function refreshClassFilter(){
+    var select = $("filterClass");
+    var current = select.value;
+    var classes = Array.from(new Set(students.map(function(s){ return s.class; }))).sort();
+    select.innerHTML = '<option value="">Semua kelas</option>' + classes.map(function(c){
+      return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
+    }).join("");
+    select.value = classes.indexOf(current) >= 0 ? current : "";
+  }
+
+  // ---------- render student grid ----------
+  function renderGrid(){
+    var grid = $("studentGrid");
+    var search = $("searchInput").value.trim().toLowerCase();
+    var classFilter = $("filterClass").value;
+    var levelFilter = $("filterLevel").value;
+    var sortBy = $("sortBy").value;
+
+    var list = students.filter(function(s){
+      if(search && s.name.toLowerCase().indexOf(search) === -1) return false;
+      if(classFilter && s.class !== classFilter) return false;
+      if(levelFilter && s._risk.level !== levelFilter) return false;
+      return true;
+    });
+
+    list.sort(function(a,b){
+      if(sortBy === "risk-desc") return b._risk.composite - a._risk.composite;
+      if(sortBy === "risk-asc") return a._risk.composite - b._risk.composite;
+      if(sortBy === "name-asc") return a.name.localeCompare(b.name);
+      return 0;
+    });
+
+    if(list.length === 0){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">' +
+        '<div class="glyph">◎</div>' +
+        '<p>' + (students.length === 0 ? 'Belum ada data siswa. Tambahkan data di panel kiri atau muat contoh data.' : 'Tidak ada siswa yang cocok dengan filter saat ini.') + '</p>' +
+      '</div>';
+      return;
+    }
+
+    grid.innerHTML = list.map(function(s){
+      var r = s._risk;
+      return '<div class="s-card" data-id="' + s.id + '">' +
+        '<div class="s-card-top">' +
+          gaugeSVG(r.composite, r.level, 52) +
+          '<div>' +
+            '<div class="s-name">' + escapeHtml(s.name) + '</div>' +
+            '<div class="s-class">' + escapeHtml(s.class) + '</div>' +
+          '</div>' +
+          '<span class="badge ' + r.level + '">' + levelLabel(r.level) + '</span>' +
+        '</div>' +
+        '<div class="mini-bars">' +
+          miniBar("Kehadiran", s.attendance + "%", s.attendance) +
+          miniBar("Nilai", s.grade, s.grade) +
+          miniBar("Tugas tunda", s.missing + "x", clamp(100 - s.missing*12,0,100)) +
+        '</div>' +
+      '</div>';
+    }).join("");
+
+    // bind click
+    Array.from(grid.querySelectorAll(".s-card")).forEach(function(card){
+      card.addEventListener("click", function(){
+        openModal(parseInt(card.dataset.id, 10));
+      });
+    });
+  }
+
+  function miniBar(label, valDisplay, pct){
+    var color = pct >= 67 ? "#39D6A0" : (pct >= 34 ? "#F3B94D" : "#F1594E");
+    // note: here higher pct = better (e.g. attendance/grade), so color logic direct
+    return '<div class="mini-bar-row">' +
+      '<div class="mini-bar-label">' + label + '</div>' +
+      '<div class="mini-bar-track"><div class="mini-bar-fill" style="width:' + clamp(pct,0,100) + '%; background:' + color + ';"></div></div>' +
+      '<div class="mini-bar-val">' + valDisplay + '</div>' +
+    '</div>';
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  // ---------- modal ----------
+  function openModal(id){
+    var s = students.find(function(x){ return x.id === id; });
+    if(!s) return;
+    var r = s._risk;
+    var recs = buildRecommendation(s, r);
+
+    $("modalContent").innerHTML =
+      '<button class="modal-close" id="modalCloseBtn" aria-label="Tutup">&times;</button>' +
+      '<div class="modal-head">' +
+        gaugeSVG(r.composite, r.level, 68) +
+        '<div>' +
+          '<div class="modal-name">' + escapeHtml(s.name) + '</div>' +
+          '<div class="modal-class">' + escapeHtml(s.class) + ' &middot; <span class="badge ' + r.level + '">' + levelLabel(r.level) + '</span></div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="factor-block">' +
+        '<div class="factor-title">Rincian Faktor Risiko</div>' +
+        miniBar("Kehadiran", s.attendance + "%", s.attendance) +
+        miniBar("Rata-rata nilai", s.grade, s.grade) +
+        miniBar("Tugas tunda", s.missing + "x", clamp(100 - s.missing*12,0,100)) +
+        miniBar("Tren nilai", trendLabel(s.trend), s.trend === "naik" ? 100 : (s.trend === "stabil" ? 55 : 15)) +
+      '</div>' +
+
+      '<div class="factor-block">' +
+        '<div class="factor-title">Ringkasan</div>' +
+        '<div class="rec-box ' + r.level + '">' + summaryText(r.level) + '</div>' +
+      '</div>' +
+
+      '<div class="factor-block">' +
+        '<div class="factor-title">Rekomendasi Tindak Lanjut</div>' +
+        '<div class="rec-box ' + r.level + '"><ul class="rec-list">' + recs.map(function(t){ return '<li>' + t + '</li>'; }).join("") + '</ul></div>' +
+      '</div>';
+
+    $("overlay").classList.add("show");
+    $("modalCloseBtn").addEventListener("click", closeModal);
+  }
+  function trendLabel(t){
+    return t === "naik" ? "Meningkat" : (t === "turun" ? "Menurun" : "Stabil");
+  }
+  function closeModal(){ $("overlay").classList.remove("show"); }
+  $("overlay").addEventListener("click", function(e){
+    if(e.target.id === "overlay") closeModal();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape") closeModal();
+  });
+
+  // ---------- CRUD ----------
+  function addStudent(data){
+    var s = {
+      id: uid++,
+      name: data.name,
+      class: data.class,
+      attendance: data.attendance,
+      grade: data.grade,
+      missing: data.missing,
+      trend: data.trend
+    };
+    s._risk = computeRisk(s);
+    students.push(s);
+    refreshAll();
+  }
+
+  function refreshAll(){
+    refreshClassFilter();
+    renderTopStats();
+    renderGrid();
+  }
+
+  $("btnAdd").addEventListener("click", function(){
+    var name = $("fName").value.trim();
+    var klass = $("fClass").value.trim();
+    var attendance = parseFloat($("fAttendance").value);
+    var grade = parseFloat($("fGrade").value);
+    var missing = parseFloat($("fMissing").value) || 0;
+    var trend = $("fTrend").value;
+
+    if(!name || !klass || isNaN(attendance) || isNaN(grade)){
+      flashInvalid();
+      return;
+    }
+
+    addStudent({
+      name: name, class: klass,
+      attendance: clamp(attendance,0,100),
+      grade: clamp(grade,0,100),
+      missing: Math.max(0, missing),
+      trend: trend
+    });
+
+    ["fName","fClass","fAttendance","fGrade","fMissing"].forEach(function(id){ $(id).value = ""; });
+    $("fTrend").value = "stabil";
+    $("fName").focus();
+  });
+
+  function flashInvalid(){
+    ["fName","fClass","fAttendance","fGrade"].forEach(function(id){
+      var el = $(id);
+      if(!el.value){
+        el.style.borderColor = "var(--risk)";
+        setTimeout(function(){ el.style.borderColor = ""; }, 900);
+      }
+    });
+  }
+
+  $("btnClearAll").addEventListener("click", function(){
+    students = [];
+    refreshAll();
+  });
+
+  $("btnSample").addEventListener("click", function(){
+    var sample = [
+      {name:"Rangga Pratama", class:"X IPA 2", attendance:64, grade:58, missing:4, trend:"turun"},
+      {name:"Nadia Salsabila", class:"X IPA 2", attendance:96, grade:88, missing:0, trend:"naik"},
+      {name:"Farhan Maulana", class:"XI IPS 1", attendance:80, grade:72, missing:1, trend:"stabil"},
+      {name:"Dinda Ayu Lestari", class:"XI IPS 1", attendance:55, grade:49, missing:6, trend:"turun"},
+      {name:"Bagas Wicaksono", class:"X IPA 2", attendance:90, grade:81, missing:0, trend:"stabil"},
+      {name:"Citra Ramadhani", class:"XI IPS 1", attendance:73, grade:65, missing:2, trend:"turun"},
+      {name:"Yoga Saputra", class:"XII IPA 1", attendance:98, grade:92, missing:0, trend:"naik"},
+      {name:"Melati Anjani", class:"XII IPA 1", attendance:68, grade:60, missing:3, trend:"stabil"}
+    ];
+    sample.forEach(addStudent);
+  });
+
+  $("btnExport").addEventListener("click", function(){
+    if(students.length === 0) return;
+    var rows = [["Nama","Kelas","Kehadiran(%)","Rata-rata Nilai","Tugas Tunda","Tren","Skor Risiko","Status"]];
+    students.forEach(function(s){
+      rows.push([s.name, s.class, s.attendance, s.grade, s.missing, trendLabel(s.trend), s._risk.composite, levelLabel(s._risk.level)]);
+    });
+    var csv = rows.map(function(r){
+      return r.map(function(cell){
+        var v = String(cell).replace(/"/g,'""');
+        return /[",\n]/.test(v) ? '"' + v + '"' : v;
+      }).join(",");
+    }).join("\n");
+
+    var blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "laporan-risiko-akademik.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------- filter/sort listeners ----------
+  ["searchInput","filterClass","filterLevel","sortBy"].forEach(function(id){
+    $(id).addEventListener("input", renderGrid);
+    $(id).addEventListener("change", renderGrid);
+  });
+
+  // init
+  refreshAll();
+})();
+</script>
+</body>
+</html>

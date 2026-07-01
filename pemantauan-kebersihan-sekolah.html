@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistem Pemantauan Lingkungan Sekolah (Kebersihan)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F8F4;
+    --panel:#FFFFFF;
+    --line:#E1EAE1;
+    --line-soft:#EDF3ED;
+    --ink:#1E2A22;
+    --ink-soft:#5C6D61;
+    --ink-faint:#93A69A;
+    --green:#2FA35E;
+    --green-bg:#E3F6EA;
+    --amber:#DE9F22;
+    --amber-bg:#FBF0D8;
+    --red:#DF4B3E;
+    --red-bg:#FBE2DF;
+    --accent:#1D8A63;
+    --accent-dark:#146B4C;
+    --radius:14px;
+    --shadow:0 8px 22px rgba(30,42,34,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 22px 70px;
+  }
+  .wrap{max-width:1240px; margin:0 auto;}
+
+  header.top{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:18px;
+    margin-bottom:24px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--accent-dark);
+    font-weight:600;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .eyebrow .leaf{font-size:13px;}
+  h1{
+    font-family:'Manrope',sans-serif;
+    font-weight:800;
+    font-size:clamp(24px,3.2vw,32px);
+    margin:0 0 8px;
+    letter-spacing:-.01em;
+  }
+  .sub{color:var(--ink-soft); font-size:14px; max-width:560px; line-height:1.55;}
+
+  .top-stats{display:flex; gap:10px; flex-wrap:wrap;}
+  .stat-pill{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:12px 18px;
+    min-width:100px;
+    text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .stat-pill .n{font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:600; line-height:1;}
+  .stat-pill .l{font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink-soft); margin-top:6px;}
+  .stat-pill.green .n{color:var(--green);}
+  .stat-pill.amber .n{color:var(--amber);}
+  .stat-pill.red .n{color:var(--red);}
+
+  /* ---------- layout ---------- */
+  .grid{display:grid; grid-template-columns:340px 1fr; gap:22px; align-items:start;}
+  @media (max-width:940px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+  }
+  .panel + .panel{margin-top:20px;}
+  .panel-title{font-family:'Manrope',sans-serif; font-weight:700; font-size:15.5px; margin:0 0 4px;}
+  .panel-desc{font-size:12.5px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5;}
+
+  /* ---------- form ---------- */
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field input, .field select, .field textarea{
+    width:100%;
+    background:#FBFDFB;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:9px 11px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .field textarea{min-height:64px; resize:vertical;}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent);}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+
+  .criteria-block{margin-bottom:12px;}
+  .criteria-name{font-size:13px; font-weight:600; margin-bottom:6px;}
+  .dots{display:flex; gap:6px;}
+  .dot{
+    width:28px; height:28px;
+    border-radius:8px;
+    border:1.5px solid var(--line);
+    background:#FBFDFB;
+    cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--ink-faint);
+    transition:all .12s ease;
+  }
+  .dot.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .dot:hover{border-color:var(--accent);}
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border:none;
+    border-radius:9px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:transform .1s ease, filter .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--accent); color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--accent); color:var(--accent-dark);}
+  .btn-full{width:100%;}
+  .btn-row{display:flex; gap:10px; margin-top:8px;}
+  .btn-row .btn{flex:1;}
+
+  /* ---------- alerts ---------- */
+  .alert-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:var(--red-bg);
+    border:1px solid rgba(223,75,62,0.25);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:8px;
+  }
+  .alert-item:last-child{margin-bottom:0;}
+  .alert-dot{width:9px; height:9px; border-radius:50%; background:var(--red); flex-shrink:0; box-shadow:0 0 0 3px rgba(223,75,62,0.18);}
+  .alert-text{font-size:13px; flex:1;}
+  .alert-text b{font-weight:700;}
+  .alert-score{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--red); font-weight:600;}
+
+  /* ---------- filters ---------- */
+  .filter-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;}
+  .filter-row select, .filter-row input{
+    background:#FBFDFB;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:8px 12px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+  .filter-row input{flex:1; min-width:160px;}
+  .filter-row select:focus, .filter-row input:focus{border-color:var(--accent);}
+
+  /* ---------- area cards ---------- */
+  .area-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(260px,1fr));
+    gap:14px;
+  }
+  .area-card{
+    background:#FBFDFB;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+    cursor:pointer;
+    transition:border-color .15s ease, transform .12s ease;
+  }
+  .area-card:hover{border-color:var(--accent); transform:translateY(-2px);}
+  .area-head{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .status-lamp{
+    width:14px; height:14px;
+    border-radius:50%;
+    flex-shrink:0;
+    box-shadow:0 0 0 4px currentColor;
+    opacity:.85;
+  }
+  .status-lamp.green{background:var(--green); color:rgba(47,163,94,0.18);}
+  .status-lamp.amber{background:var(--amber); color:rgba(222,159,34,0.18);}
+  .status-lamp.red{background:var(--red); color:rgba(223,75,62,0.18);}
+  .area-name{font-family:'Manrope',sans-serif; font-weight:700; font-size:15px;}
+  .area-meta{font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; margin-top:2px;}
+
+  .area-score-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
+  .area-score{font-family:'IBM Plex Mono',monospace; font-size:26px; font-weight:700;}
+  .area-score.green{color:var(--green);}
+  .area-score.amber{color:var(--amber);}
+  .area-score.red{color:var(--red);}
+  .badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    padding:3px 9px;
+    border-radius:20px;
+    font-weight:600;
+  }
+  .badge.green{background:var(--green-bg); color:var(--green);}
+  .badge.amber{background:var(--amber-bg); color:var(--amber);}
+  .badge.red{background:var(--red-bg); color:var(--red);}
+
+  .sparkline{display:block; margin-top:6px;}
+
+  .empty-state{text-align:center; padding:50px 20px; color:var(--ink-soft);}
+  .empty-state .glyph{font-size:30px; margin-bottom:10px; color:var(--ink-faint);}
+  .empty-state p{font-size:13.5px; max-width:340px; margin:6px auto 0; line-height:1.6;}
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed; inset:0;
+    background:rgba(20,30,24,0.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:50;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--panel);
+    border-radius:16px;
+    max-width:600px;
+    width:100%;
+    max-height:88vh;
+    overflow-y:auto;
+    padding:26px;
+    position:relative;
+  }
+  .modal-close{
+    position:absolute; top:16px; right:16px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    width:30px; height:30px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+    line-height:1;
+  }
+  .modal-close:hover{color:var(--ink);}
+  .modal-head{display:flex; gap:14px; align-items:center; margin-bottom:18px;}
+  .modal-name{font-family:'Manrope',sans-serif; font-weight:800; font-size:20px;}
+  .modal-meta{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+
+  .history-item{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px 14px;
+    margin-bottom:10px;
+  }
+  .history-item:last-child{margin-bottom:0;}
+  .history-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .history-date{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink-soft);}
+  .history-note{font-size:13px; color:var(--ink-soft); line-height:1.5; margin-top:6px;}
+  .history-crit{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .crit-chip{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:3px 8px;
+  }
+
+  footer.hint{text-align:center; font-size:12px; color:var(--ink-faint); margin-top:28px;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div>
+      <div class="eyebrow"><span class="leaf">🌿</span> Pemantauan Lingkungan &middot; Kebersihan Sekolah</div>
+      <h1>Sistem Pemantauan Lingkungan Sekolah</h1>
+      <p class="sub">Catat hasil inspeksi kebersihan tiap area sekolah secara berkala, pantau tren dari waktu ke waktu, dan dapatkan peringatan area yang perlu tindakan segera.</p>
+    </div>
+    <div class="top-stats" id="topStats"></div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: form -->
+    <div>
+      <div class="panel">
+        <h2 class="panel-title">Catat Inspeksi Baru</h2>
+        <p class="panel-desc">Isi form berikut setiap kali melakukan pemeriksaan kebersihan area.</p>
+
+        <div class="field">
+          <label for="fArea">Area</label>
+          <select id="fArea">
+            <option value="">-- Pilih area --</option>
+          </select>
+        </div>
+        <div class="field" id="newAreaField" style="display:none;">
+          <label for="fNewArea">Nama area baru</label>
+          <input type="text" id="fNewArea" placeholder="Contoh: Ruang UKS">
+        </div>
+        <button class="btn btn-ghost btn-full" id="btnToggleNewArea" style="margin-bottom:14px;">+ Tambah area baru</button>
+
+        <div class="field-row">
+          <div class="field">
+            <label for="fDate">Tanggal</label>
+            <input type="date" id="fDate">
+          </div>
+          <div class="field">
+            <label for="fInspector">Petugas</label>
+            <input type="text" id="fInspector" placeholder="Nama petugas">
+          </div>
+        </div>
+
+        <div class="criteria-block">
+          <div class="criteria-name">Kebersihan lantai &amp; permukaan</div>
+          <div class="dots" data-criteria="lantai"></div>
+        </div>
+        <div class="criteria-block">
+          <div class="criteria-name">Pengelolaan sampah</div>
+          <div class="dots" data-criteria="sampah"></div>
+        </div>
+        <div class="criteria-block">
+          <div class="criteria-name">Kondisi udara &amp; bau</div>
+          <div class="dots" data-criteria="udara"></div>
+        </div>
+        <div class="criteria-block">
+          <div class="criteria-name">Kerapian &amp; penataan</div>
+          <div class="dots" data-criteria="rapi"></div>
+        </div>
+        <div class="criteria-block">
+          <div class="criteria-name">Sarana kebersihan tersedia</div>
+          <div class="dots" data-criteria="sarana"></div>
+        </div>
+
+        <div class="field">
+          <label for="fNote">Catatan (opsional)</label>
+          <textarea id="fNote" placeholder="Contoh: tempat sampah penuh di sudut ruangan..."></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-full" id="btnSubmit">Simpan Inspeksi</button>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Data &amp; Laporan</h2>
+        <p class="panel-desc">Muat contoh data atau unduh seluruh riwayat inspeksi.</p>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="btnSample">Muat Contoh Data</button>
+          <button class="btn btn-ghost" id="btnClearAll">Hapus Semua</button>
+        </div>
+        <button class="btn btn-ghost btn-full" id="btnExport" style="margin-top:10px;">Unduh Riwayat .csv</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: dashboard -->
+    <div>
+      <div class="panel" id="alertPanel" style="display:none;">
+        <h2 class="panel-title">⚠ Perlu Tindakan Segera</h2>
+        <p class="panel-desc">Area dengan status kebersihan rendah pada inspeksi terakhir.</p>
+        <div id="alertList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="filter-row">
+          <input type="text" id="searchInput" placeholder="Cari nama area...">
+          <select id="filterStatus">
+            <option value="">Semua status</option>
+            <option value="green">Bersih</option>
+            <option value="amber">Cukup</option>
+            <option value="red">Perlu Tindakan</option>
+          </select>
+        </div>
+        <div id="areaGrid" class="area-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="hint">Data pemantauan ini disimpan sementara di peramban dan tidak terkirim ke server mana pun — unduh laporan sebelum menutup halaman.</footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+
+  var CRITERIA = [
+    {key:"lantai", label:"Kebersihan lantai & permukaan"},
+    {key:"sampah", label:"Pengelolaan sampah"},
+    {key:"udara", label:"Kondisi udara & bau"},
+    {key:"rapi", label:"Kerapian & penataan"},
+    {key:"sarana", label:"Sarana kebersihan tersedia"}
+  ];
+
+  var DEFAULT_AREAS = ["Ruang Kelas","Toilet","Kantin","Perpustakaan","Halaman/Taman","Laboratorium","Ruang Guru","Musholla"];
+
+  var areas = {}; // name -> [{date, inspector, scores{}, note, avg}]
+  var currentRatings = {};
+  var uid = 1;
+
+  // ---------- init areas ----------
+  DEFAULT_AREAS.forEach(function(a){ areas[a] = []; });
+
+  function refreshAreaSelect(){
+    var select = $("fArea");
+    var current = select.value;
+    var names = Object.keys(areas).sort();
+    select.innerHTML = '<option value="">-- Pilih area --</option>' + names.map(function(a){
+      return '<option value="' + escapeHtml(a) + '">' + escapeHtml(a) + '</option>';
+    }).join("");
+    select.value = names.indexOf(current) >= 0 ? current : "";
+  }
+
+  // ---------- rating dots ----------
+  function buildDots(){
+    CRITERIA.forEach(function(c){
+      var container = document.querySelector('.dots[data-criteria="' + c.key + '"]');
+      container.innerHTML = "";
+      currentRatings[c.key] = 0;
+      for(var i = 1; i <= 5; i++){
+        var dot = document.createElement("div");
+        dot.className = "dot";
+        dot.textContent = i;
+        dot.dataset.val = i;
+        dot.addEventListener("click", (function(key, val, cont){
+          return function(){
+            currentRatings[key] = val;
+            Array.from(cont.children).forEach(function(d){
+              d.classList.toggle("active", parseInt(d.dataset.val,10) <= val);
+            });
+          };
+        })(c.key, i, container));
+        container.appendChild(dot);
+      }
+    });
+  }
+  buildDots();
+
+  function resetDots(){
+    CRITERIA.forEach(function(c){
+      currentRatings[c.key] = 0;
+      var container = document.querySelector('.dots[data-criteria="' + c.key + '"]');
+      Array.from(container.children).forEach(function(d){ d.classList.remove("active"); });
+    });
+  }
+
+  // ---------- helpers ----------
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+  function todayStr(){
+    var d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+  function formatDate(str){
+    var d = new Date(str + "T00:00:00");
+    return d.toLocaleDateString("id-ID", {day:"2-digit", month:"short", year:"numeric"});
+  }
+  function statusFromScore(avg){
+    if(avg >= 4) return "green";
+    if(avg >= 2.5) return "amber";
+    return "red";
+  }
+  function statusLabel(status){
+    return status === "green" ? "Bersih" : (status === "amber" ? "Cukup" : "Perlu Tindakan");
+  }
+
+  $("fDate").value = todayStr();
+
+  // ---------- toggle new area field ----------
+  $("btnToggleNewArea").addEventListener("click", function(){
+    var field = $("newAreaField");
+    var showing = field.style.display !== "none";
+    field.style.display = showing ? "none" : "block";
+    this.textContent = showing ? "+ Tambah area baru" : "− Batal tambah area";
+  });
+
+  // ---------- submit inspection ----------
+  $("btnSubmit").addEventListener("click", function(){
+    var newAreaName = $("fNewArea").value.trim();
+    var selectedArea = $("fArea").value;
+    var areaName = newAreaName || selectedArea;
+
+    var date = $("fDate").value || todayStr();
+    var inspector = $("fInspector").value.trim();
+
+    var scores = {};
+    var allRated = true;
+    CRITERIA.forEach(function(c){
+      scores[c.key] = currentRatings[c.key];
+      if(!currentRatings[c.key]) allRated = false;
+    });
+
+    if(!areaName || !inspector || !allRated){
+      flashInvalid(!areaName, !inspector, !allRated);
+      return;
+    }
+
+    if(!areas[areaName]) areas[areaName] = [];
+
+    var sum = CRITERIA.reduce(function(acc,c){ return acc + scores[c.key]; }, 0);
+    var avg = Math.round((sum / CRITERIA.length) * 10) / 10;
+
+    areas[areaName].push({
+      id: uid++,
+      date: date,
+      inspector: inspector,
+      scores: scores,
+      note: $("fNote").value.trim(),
+      avg: avg
+    });
+    areas[areaName].sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+    // reset form
+    $("fNewArea").value = "";
+    $("fInspector").value = "";
+    $("fNote").value = "";
+    $("fDate").value = todayStr();
+    $("newAreaField").style.display = "none";
+    $("btnToggleNewArea").textContent = "+ Tambah area baru";
+    resetDots();
+
+    refreshAreaSelect();
+    refreshAll();
+  });
+
+  function flashInvalid(noArea, noInspector, noRating){
+    if(noArea){
+      $("fArea").style.borderColor = "var(--red)";
+      setTimeout(function(){ $("fArea").style.borderColor = ""; }, 900);
+    }
+    if(noInspector){
+      $("fInspector").style.borderColor = "var(--red)";
+      setTimeout(function(){ $("fInspector").style.borderColor = ""; }, 900);
+    }
+  }
+
+  // ---------- computed: latest per area ----------
+  function getLatest(areaName){
+    var list = areas[areaName];
+    return list && list.length ? list[list.length - 1] : null;
+  }
+  function getAreasWithData(){
+    return Object.keys(areas).filter(function(a){ return areas[a].length > 0; });
+  }
+
+  // ---------- top stats ----------
+  function renderTopStats(){
+    var withData = getAreasWithData();
+    var statuses = withData.map(function(a){ return statusFromScore(getLatest(a).avg); });
+    var green = statuses.filter(function(s){ return s === "green"; }).length;
+    var amber = statuses.filter(function(s){ return s === "amber"; }).length;
+    var red = statuses.filter(function(s){ return s === "red"; }).length;
+    var overallAvg = withData.length
+      ? Math.round(withData.reduce(function(sum,a){ return sum + getLatest(a).avg; }, 0) / withData.length * 10) / 10
+      : 0;
+
+    $("topStats").innerHTML =
+      pill(withData.length, "Area Dipantau", "") +
+      pill(overallAvg || "-", "Rata-rata Skor", "") +
+      pill(green, "Bersih", "green") +
+      pill(amber, "Cukup", "amber") +
+      pill(red, "Perlu Tindakan", "red");
+  }
+  function pill(n, label, cls){
+    return '<div class="stat-pill ' + cls + '"><div class="n">' + n + '</div><div class="l">' + label + '</div></div>';
+  }
+
+  // ---------- alerts ----------
+  function renderAlerts(){
+    var withData = getAreasWithData();
+    var redAreas = withData
+      .map(function(a){ return {name:a, latest:getLatest(a)}; })
+      .filter(function(x){ return statusFromScore(x.latest.avg) === "red"; })
+      .sort(function(a,b){ return a.latest.avg - b.latest.avg; });
+
+    if(redAreas.length === 0){
+      $("alertPanel").style.display = "none";
+      return;
+    }
+    $("alertPanel").style.display = "block";
+    $("alertList").innerHTML = redAreas.map(function(x){
+      return '<div class="alert-item">' +
+        '<div class="alert-dot"></div>' +
+        '<div class="alert-text"><b>' + escapeHtml(x.name) + '</b> — inspeksi terakhir ' + formatDate(x.latest.date) + ' oleh ' + escapeHtml(x.latest.inspector) + '</div>' +
+        '<div class="alert-score">' + x.latest.avg + '/5</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  // ---------- sparkline ----------
+  function sparklineSVG(history){
+    var w = 200, h = 36, pad = 4;
+    if(history.length < 2){
+      return '<svg class="sparkline" width="' + w + '" height="' + h + '"></svg>';
+    }
+    var vals = history.map(function(h){ return h.avg; });
+    var max = 5, min = 0;
+    var stepX = (w - pad*2) / (vals.length - 1);
+    var points = vals.map(function(v, i){
+      var x = pad + i * stepX;
+      var y = h - pad - ((v - min) / (max - min)) * (h - pad*2);
+      return x + "," + y;
+    }).join(" ");
+    var lastStatus = statusFromScore(vals[vals.length-1]);
+    var color = lastStatus === "green" ? "#2FA35E" : (lastStatus === "amber" ? "#DE9F22" : "#DF4B3E");
+    return '<svg class="sparkline" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+      '<polyline points="' + points + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
+  }
+
+  // ---------- area grid ----------
+  function renderAreaGrid(){
+    var grid = $("areaGrid");
+    var search = $("searchInput").value.trim().toLowerCase();
+    var statusFilter = $("filterStatus").value;
+
+    var list = getAreasWithData().filter(function(a){
+      if(search && a.toLowerCase().indexOf(search) === -1) return false;
+      if(statusFilter && statusFromScore(getLatest(a).avg) !== statusFilter) return false;
+      return true;
+    });
+
+    list.sort(function(a,b){ return getLatest(a).avg - getLatest(b).avg; });
+
+    if(list.length === 0){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">' +
+        '<div class="glyph">🧹</div>' +
+        '<p>' + (getAreasWithData().length === 0 ? 'Belum ada data inspeksi. Catat inspeksi pertama di panel kiri atau muat contoh data.' : 'Tidak ada area yang cocok dengan filter saat ini.') + '</p>' +
+      '</div>';
+      return;
+    }
+
+    grid.innerHTML = list.map(function(a){
+      var latest = getLatest(a);
+      var status = statusFromScore(latest.avg);
+      var history = areas[a].slice(-8);
+      return '<div class="area-card" data-area="' + escapeHtml(a) + '">' +
+        '<div class="area-head">' +
+          '<div class="status-lamp ' + status + '"></div>' +
+          '<div>' +
+            '<div class="area-name">' + escapeHtml(a) + '</div>' +
+            '<div class="area-meta">' + formatDate(latest.date) + ' &middot; ' + escapeHtml(latest.inspector) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="area-score-row">' +
+          '<div class="area-score ' + status + '">' + latest.avg + '<span style="font-size:13px; opacity:.6;">/5</span></div>' +
+          '<span class="badge ' + status + '">' + statusLabel(status) + '</span>' +
+        '</div>' +
+        sparklineSVG(history) +
+      '</div>';
+    }).join("");
+
+    Array.from(grid.querySelectorAll(".area-card")).forEach(function(card){
+      card.addEventListener("click", function(){ openModal(card.dataset.area); });
+    });
+  }
+
+  // ---------- modal ----------
+  function openModal(areaName){
+    var history = areas[areaName].slice().reverse();
+    var latest = history[0];
+    var status = statusFromScore(latest.avg);
+
+    $("modalContent").innerHTML =
+      '<button class="modal-close" id="modalCloseBtn" aria-label="Tutup">&times;</button>' +
+      '<div class="modal-head">' +
+        '<div class="status-lamp ' + status + '" style="width:18px; height:18px;"></div>' +
+        '<div>' +
+          '<div class="modal-name">' + escapeHtml(areaName) + '</div>' +
+          '<div class="modal-meta">' + history.length + ' kali diinspeksi &middot; <span class="badge ' + status + '">' + statusLabel(status) + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="panel-title" style="font-size:13.5px; margin-bottom:10px;">Riwayat Inspeksi</div>' +
+      history.map(function(h){
+        return '<div class="history-item">' +
+          '<div class="history-top">' +
+            '<div class="history-date">' + formatDate(h.date) + ' &middot; ' + escapeHtml(h.inspector) + '</div>' +
+            '<div class="badge ' + statusFromScore(h.avg) + '">' + h.avg + '/5</div>' +
+          '</div>' +
+          '<div class="history-crit">' +
+            CRITERIA.map(function(c){
+              return '<span class="crit-chip">' + c.label + ': ' + h.scores[c.key] + '</span>';
+            }).join("") +
+          '</div>' +
+          (h.note ? '<div class="history-note">"' + escapeHtml(h.note) + '"</div>' : "") +
+        '</div>';
+      }).join("");
+
+    $("overlay").classList.add("show");
+    $("modalCloseBtn").addEventListener("click", closeModal);
+  }
+  function closeModal(){ $("overlay").classList.remove("show"); }
+  $("overlay").addEventListener("click", function(e){ if(e.target.id === "overlay") closeModal(); });
+  document.addEventListener("keydown", function(e){ if(e.key === "Escape") closeModal(); });
+
+  // ---------- sample data ----------
+  $("btnSample").addEventListener("click", function(){
+    var today = new Date();
+    function dateOffset(daysAgo){
+      var d = new Date(today);
+      d.setDate(d.getDate() - daysAgo);
+      return d.toISOString().slice(0,10);
+    }
+    var samplePlan = {
+      "Ruang Kelas": [
+        {days:14, inspector:"Bu Sari", s:[4,4,5,4,5], note:""},
+        {days:7, inspector:"Bu Sari", s:[5,5,5,4,5], note:"Sudah rutin dibersihkan tiap pagi."},
+        {days:1, inspector:"Bu Sari", s:[5,4,5,5,5], note:""}
+      ],
+      "Toilet": [
+        {days:14, inspector:"Pak Joko", s:[2,2,2,3,2], note:"Bau menyengat, sabun habis."},
+        {days:7, inspector:"Pak Joko", s:[2,3,2,3,2], note:"Masih perlu perhatian."},
+        {days:1, inspector:"Pak Joko", s:[2,2,3,2,2], note:"Belum ada perbaikan signifikan."}
+      ],
+      "Kantin": [
+        {days:10, inspector:"Bu Rina", s:[4,4,4,4,4], note:""},
+        {days:3, inspector:"Bu Rina", s:[4,5,4,4,5], note:"Meja makan bersih dan rapi."}
+      ],
+      "Perpustakaan": [
+        {days:12, inspector:"Pak Budi", s:[5,5,4,5,5], note:""},
+        {days:2, inspector:"Pak Budi", s:[5,5,5,5,5], note:"Kondisi sangat terjaga."}
+      ],
+      "Halaman/Taman": [
+        {days:9, inspector:"Pak Dedi", s:[3,3,4,3,3], note:"Ada beberapa sampah daun menumpuk."},
+        {days:1, inspector:"Pak Dedi", s:[3,2,3,3,2], note:"Perlu penyapuan tambahan sore hari."}
+      ],
+      "Laboratorium": [
+        {days:6, inspector:"Bu Wati", s:[4,4,4,5,4], note:""}
+      ]
+    };
+
+    Object.keys(samplePlan).forEach(function(areaName){
+      if(!areas[areaName]) areas[areaName] = [];
+      samplePlan[areaName].forEach(function(entry){
+        var scores = {};
+        CRITERIA.forEach(function(c, i){ scores[c.key] = entry.s[i]; });
+        var avg = Math.round((entry.s.reduce(function(a,b){return a+b;},0) / CRITERIA.length) * 10) / 10;
+        areas[areaName].push({
+          id: uid++, date: dateOffset(entry.days), inspector: entry.inspector,
+          scores: scores, note: entry.note, avg: avg
+        });
+      });
+      areas[areaName].sort(function(a,b){ return a.date.localeCompare(b.date); });
+    });
+
+    refreshAreaSelect();
+    refreshAll();
+  });
+
+  $("btnClearAll").addEventListener("click", function(){
+    areas = {};
+    DEFAULT_AREAS.forEach(function(a){ areas[a] = []; });
+    refreshAreaSelect();
+    refreshAll();
+  });
+
+  // ---------- export ----------
+  $("btnExport").addEventListener("click", function(){
+    var rows = [["Area","Tanggal","Petugas","Skor Rata-rata","Status"].concat(CRITERIA.map(function(c){return c.label;})).concat(["Catatan"])];
+    Object.keys(areas).forEach(function(areaName){
+      areas[areaName].forEach(function(h){
+        var row = [areaName, h.date, h.inspector, h.avg, statusLabel(statusFromScore(h.avg))];
+        CRITERIA.forEach(function(c){ row.push(h.scores[c.key]); });
+        row.push(h.note);
+        rows.push(row);
+      });
+    });
+    if(rows.length === 1) return;
+    var csv = rows.map(function(row){
+      return row.map(function(cell){
+        var v = String(cell).replace(/"/g,'""');
+        return /[",\n]/.test(v) ? '"' + v + '"' : v;
+      }).join(",");
+    }).join("\n");
+
+    var blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "riwayat-kebersihan-sekolah.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------- filters ----------
+  ["searchInput","filterStatus"].forEach(function(id){
+    $(id).addEventListener("input", renderAreaGrid);
+    $(id).addEventListener("change", renderAreaGrid);
+  });
+
+  function refreshAll(){
+    renderTopStats();
+    renderAlerts();
+    renderAreaGrid();
+  }
+
+  refreshAreaSelect();
+  refreshAll();
+})();
+</script>
+</body>
+</html>

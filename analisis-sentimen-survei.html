@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alat Analisis Sentimen Survei Kepuasan Sekolah</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cork:#8A6A4F;
+    --cork-dark:#6E5340;
+    --board:#7C5D44;
+    --pos:#CFEFD6;
+    --pos-ink:#1F6B3B;
+    --pos-pin:#3FA85C;
+    --neu:#FBEFC6;
+    --neu-ink:#8A6B12;
+    --neu-pin:#E4B23C;
+    --neg:#F7D6D6;
+    --neg-ink:#A13434;
+    --neg-pin:#D8544E;
+    --ink:#2B2420;
+    --ink-soft:#6B5F54;
+    --panel:#FFFBF3;
+    --panel-line:#E7DCC8;
+    --teal:#2E8B84;
+    --teal-dark:#226A65;
+    --radius:14px;
+    --shadow:0 10px 24px rgba(43,36,32,0.18);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 8% 8%, rgba(255,255,255,0.05), transparent 40%),
+      repeating-linear-gradient(45deg, rgba(0,0,0,0.015) 0 2px, transparent 2px 4px),
+      var(--cork);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:30px 22px 70px;
+  }
+  .wrap{max-width:1200px; margin:0 auto;}
+
+  header.top{
+    background:var(--panel);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    padding:26px 28px;
+    margin-bottom:22px;
+    border:1px solid var(--panel-line);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--teal-dark);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  h1{
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;
+    font-size:clamp(24px,3.2vw,34px);
+    margin:0 0 8px;
+    color:var(--ink);
+  }
+  .sub{color:var(--ink-soft); font-size:14.5px; max-width:600px; line-height:1.6;}
+
+  .panel{
+    background:var(--panel);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    border:1px solid var(--panel-line);
+    padding:22px;
+    margin-bottom:22px;
+  }
+  .panel-title{
+    font-family:'Quicksand',sans-serif;
+    font-weight:700;
+    font-size:16.5px;
+    margin:0 0 4px;
+  }
+  .panel-desc{font-size:13px; color:var(--ink-soft); margin:0 0 16px; line-height:1.55;}
+
+  textarea#inputResponses{
+    width:100%;
+    min-height:180px;
+    resize:vertical;
+    border:1.5px solid var(--panel-line);
+    border-radius:10px;
+    padding:14px;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    line-height:1.6;
+    color:var(--ink);
+    background:#fff;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  textarea#inputResponses:focus{border-color:var(--teal);}
+  .hint-text{font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border:none;
+    border-radius:10px;
+    padding:11px 18px;
+    cursor:pointer;
+    transition:transform .1s ease, filter .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--teal); color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--ink); border:1.5px solid var(--panel-line);}
+  .btn-ghost:hover{border-color:var(--teal); color:var(--teal-dark);}
+  .btn-row{display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;}
+
+  /* ---------- overview ---------- */
+  .overview-grid{
+    display:grid;
+    grid-template-columns:220px 1fr;
+    gap:26px;
+    align-items:center;
+  }
+  @media (max-width:760px){ .overview-grid{grid-template-columns:1fr;} }
+
+  .donut-wrap{display:flex; flex-direction:column; align-items:center; gap:8px;}
+  .donut-total{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+  }
+
+  .legend-stats{display:flex; flex-direction:column; gap:12px;}
+  .legend-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:#fff;
+    border:1px solid var(--panel-line);
+    border-radius:10px;
+    padding:10px 14px;
+  }
+  .legend-dot{width:12px; height:12px; border-radius:4px; flex-shrink:0;}
+  .legend-label{font-size:13.5px; font-weight:600; flex:1;}
+  .legend-count{font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;}
+  .legend-pct{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft); width:44px; text-align:right;}
+
+  /* ---------- aspect table ---------- */
+  .aspect-list{display:flex; flex-direction:column; gap:10px;}
+  .aspect-row{
+    background:#fff;
+    border:1px solid var(--panel-line);
+    border-radius:10px;
+    padding:12px 14px;
+  }
+  .aspect-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .aspect-name{font-family:'Quicksand',sans-serif; font-weight:700; font-size:14.5px;}
+  .aspect-total{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink-soft);}
+  .aspect-bar{
+    display:flex;
+    height:9px;
+    border-radius:6px;
+    overflow:hidden;
+    background:#eee;
+  }
+  .aspect-bar span{height:100%;}
+
+  /* ---------- filters ---------- */
+  .filter-row{
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .filter-row select, .filter-row input{
+    background:#fff;
+    border:1.5px solid var(--panel-line);
+    border-radius:8px;
+    padding:9px 12px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+  .filter-row input{flex:1; min-width:160px;}
+  .filter-row select:focus, .filter-row input:focus{border-color:var(--teal);}
+
+  /* ---------- corkboard wall ---------- */
+  .board{
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,0.03) 0 1px, transparent 1px 3px),
+      var(--board);
+    border-radius:var(--radius);
+    padding:26px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,0.25);
+  }
+  .note-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(220px, 1fr));
+    gap:22px;
+  }
+  .note{
+    position:relative;
+    border-radius:4px;
+    padding:16px 14px 14px;
+    box-shadow:0 6px 14px rgba(0,0,0,0.28);
+    font-size:13.5px;
+    line-height:1.55;
+    min-height:110px;
+  }
+  .note.pos{background:var(--pos); color:var(--pos-ink);}
+  .note.neu{background:var(--neu); color:var(--neu-ink);}
+  .note.neg{background:var(--neg); color:var(--neg-ink);}
+  .note::before{
+    content:"";
+    position:absolute;
+    top:-8px; left:50%;
+    transform:translateX(-50%);
+    width:14px; height:14px;
+    border-radius:50%;
+    box-shadow:0 3px 4px rgba(0,0,0,0.35);
+  }
+  .note.pos::before{background:var(--pos-pin);}
+  .note.neu::before{background:var(--neu-pin);}
+  .note.neg::before{background:var(--neg-pin);}
+  .note-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:8px;
+  }
+  .note-tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9.5px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    background:rgba(0,0,0,0.08);
+    padding:2px 7px;
+    border-radius:10px;
+    font-weight:600;
+  }
+  .note-score{
+    position:absolute;
+    bottom:8px;
+    right:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    opacity:.65;
+  }
+
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    color:#EADFC9;
+  }
+  .empty-state .glyph{font-size:30px; margin-bottom:10px; opacity:.6;}
+  .empty-state p{font-size:13.5px; max-width:360px; margin:6px auto 0; line-height:1.6;}
+
+  footer.hint{
+    text-align:center;
+    font-size:12px;
+    color:#EADFC9;
+    margin-top:26px;
+    opacity:.85;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">Survei Kepuasan &middot; Analisis Otomatis</div>
+    <h1>Alat Analisis Sentimen Survei Kepuasan Sekolah</h1>
+    <p class="sub">Tempel jawaban survei terbuka dari siswa, orang tua, atau guru — sistem akan mengelompokkan sentimen (positif/netral/negatif) dan aspek yang dibicarakan secara otomatis.</p>
+  </header>
+
+  <div class="panel">
+    <h2 class="panel-title">Tempel Jawaban Survei</h2>
+    <p class="panel-desc">Satu jawaban per baris. Contoh: "Gurunya sangat membantu tapi fasilitas lab masih kurang lengkap."</p>
+    <textarea id="inputResponses" placeholder="Tempelkan jawaban survei di sini, satu per baris..."></textarea>
+    <p class="hint-text" id="lineCount">0 jawaban terdeteksi</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnAnalyze">Analisis Sentimen</button>
+      <button class="btn btn-ghost" id="btnSample">Muat Contoh Jawaban</button>
+      <button class="btn btn-ghost" id="btnClear">Bersihkan</button>
+      <button class="btn btn-ghost" id="btnExport">Unduh Laporan .csv</button>
+    </div>
+  </div>
+
+  <div class="panel" id="overviewPanel" style="display:none;">
+    <h2 class="panel-title">Ringkasan Sentimen</h2>
+    <p class="panel-desc">Distribusi keseluruhan dari semua jawaban yang dianalisis.</p>
+    <div class="overview-grid">
+      <div class="donut-wrap" id="donutWrap"></div>
+      <div class="legend-stats" id="legendStats"></div>
+    </div>
+  </div>
+
+  <div class="panel" id="aspectPanel" style="display:none;">
+    <h2 class="panel-title">Sentimen per Aspek</h2>
+    <p class="panel-desc">Aspek terdeteksi otomatis dari kata kunci dalam setiap jawaban.</p>
+    <div class="aspect-list" id="aspectList"></div>
+  </div>
+
+  <div class="panel" id="wallPanel" style="display:none;">
+    <h2 class="panel-title">Papan Jawaban</h2>
+    <p class="panel-desc">Setiap jawaban ditampilkan sebagai catatan berwarna sesuai sentimennya.</p>
+    <div class="filter-row">
+      <input type="text" id="searchInput" placeholder="Cari kata dalam jawaban...">
+      <select id="filterSentiment">
+        <option value="">Semua sentimen</option>
+        <option value="pos">Positif</option>
+        <option value="neu">Netral</option>
+        <option value="neg">Negatif</option>
+      </select>
+      <select id="filterAspect">
+        <option value="">Semua aspek</option>
+      </select>
+    </div>
+    <div class="board">
+      <div class="note-grid" id="noteGrid"></div>
+    </div>
+  </div>
+
+  <footer class="hint">Analisis berbasis kamus kata (lexicon) bahasa Indonesia dan berjalan sepenuhnya di peramban ini — tidak ada data yang dikirim ke server.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+
+  // ---------- lexicon ----------
+  var POSITIVE = ["baik","bagus","senang","puas","nyaman","ramah","membantu","mendukung","hebat",
+    "keren","menyenangkan","rapi","bersih","lengkap","memuaskan","profesional","sabar","kompeten",
+    "inspiratif","kreatif","responsif","cepat","tanggap","jelas","mudah","kondusif","aman","tertib",
+    "disiplin","peduli","suportif","terbaik","mantap","oke","top","luar","biasa","asyik","seru",
+    "berkualitas","maju","modern","efektif","ramah-tamah","antusias","semangat"];
+
+  var NEGATIVE = ["buruk","jelek","kecewa","kotor","rusak","lambat","sulit","membingungkan","kurang",
+    "berisik","ribet","mahal","terbatas","monoton","membosankan","galak","cuek","semrawut","kacau",
+    "parah","payah","mengecewakan","telat","terlambat","susah","minim","kaku","ketinggalan","zaman",
+    "tidak-adil","acuh","sepi","gerah","panas","bocor","sempit","berdebu","bising","lelet","ngaret"];
+
+  var NEGATORS = ["tidak","bukan","kurang","belum","jangan","tak","nggak","gak"];
+
+  var ASPECTS = {
+    "Guru & Pengajaran": ["guru","pengajar","mengajar","dosen","pendidik","mendidik","menjelaskan","penjelasan","mengajarkan"],
+    "Fasilitas": ["fasilitas","ruang","kelas","toilet","kantin","perpustakaan","laboratorium","lab","wifi","internet","kursi","meja","gedung","lapangan","ac","kamar"],
+    "Kurikulum & Pembelajaran": ["kurikulum","materi","pelajaran","tugas","ujian","pembelajaran","metode","modul","belajar","pr","les"],
+    "Lingkungan & Suasana": ["lingkungan","suasana","teman","pertemanan","keamanan","aman","nyaman","bersih","bully","perundungan"],
+    "Administrasi & Pelayanan": ["administrasi","pelayanan","staf","tu","tata usaha","pendaftaran","prosedur","birokrasi","spp","biaya"]
+  };
+
+  var SENTIMENT_META = {
+    pos:{label:"Positif", ink:"#1F6B3B", bar:"#3FA85C", bg:"#CFEFD6"},
+    neu:{label:"Netral", ink:"#8A6B12", bar:"#E4B23C", bg:"#FBEFC6"},
+    neg:{label:"Negatif", ink:"#A13434", bar:"#D8544E", bg:"#F7D6D6"}
+  };
+
+  var results = []; // {id, text, sentiment, score, aspects[]}
+
+  // ---------- analysis ----------
+  function tokenize(text){
+    return (text.toLowerCase().match(/[a-zà-ÿ]+/g) || []);
+  }
+
+  function analyzeSentiment(text){
+    var tokens = tokenize(text);
+    var score = 0;
+    for(var i = 0; i < tokens.length; i++){
+      var w = tokens[i];
+      var isPos = POSITIVE.indexOf(w) !== -1;
+      var isNeg = NEGATIVE.indexOf(w) !== -1;
+      if(!isPos && !isNeg) continue;
+
+      var negated = false;
+      for(var j = Math.max(0, i-2); j < i; j++){
+        if(NEGATORS.indexOf(tokens[j]) !== -1){ negated = true; break; }
+      }
+
+      var val = isPos ? 1 : -1;
+      if(negated) val = -val;
+      score += val;
+    }
+    var sentiment = score > 0 ? "pos" : (score < 0 ? "neg" : "neu");
+    return { score: score, sentiment: sentiment };
+  }
+
+  function detectAspects(text){
+    var lower = text.toLowerCase();
+    var found = [];
+    Object.keys(ASPECTS).forEach(function(aspect){
+      var keywords = ASPECTS[aspect];
+      for(var i = 0; i < keywords.length; i++){
+        if(lower.indexOf(keywords[i]) !== -1){ found.push(aspect); break; }
+      }
+    });
+    if(found.length === 0) found.push("Lainnya");
+    return found;
+  }
+
+  function analyzeAll(lines){
+    results = lines.map(function(line, idx){
+      var trimmed = line.trim();
+      var a = analyzeSentiment(trimmed);
+      return {
+        id: idx,
+        text: trimmed,
+        sentiment: a.sentiment,
+        score: a.score,
+        aspects: detectAspects(trimmed),
+        rotation: (idx % 5 - 2) * 1.6 // deterministic slight tilt
+      };
+    });
+  }
+
+  // ---------- rendering ----------
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+
+  function renderOverview(){
+    var total = results.length;
+    var counts = {pos:0, neu:0, neg:0};
+    results.forEach(function(r){ counts[r.sentiment]++; });
+
+    $("overviewPanel").style.display = "block";
+
+    var radius = 70, stroke = 22, c = 2*Math.PI*radius, center = radius + stroke;
+    var size = center * 2;
+    var order = ["pos","neu","neg"];
+    var offsetAcc = 0;
+    var arcs = order.map(function(key){
+      var frac = total > 0 ? counts[key] / total : 0;
+      var len = frac * c;
+      var arc = '<circle cx="' + center + '" cy="' + center + '" r="' + radius + '" fill="none" ' +
+        'stroke="' + SENTIMENT_META[key].bar + '" stroke-width="' + stroke + '" ' +
+        'stroke-dasharray="' + len + ' ' + (c - len) + '" stroke-dashoffset="' + (-offsetAcc) + '" ' +
+        'transform="rotate(-90 ' + center + ' ' + center + ')" stroke-linecap="butt"/>';
+      offsetAcc += len;
+      return arc;
+    }).join("");
+
+    $("donutWrap").innerHTML =
+      '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">' +
+        '<circle cx="' + center + '" cy="' + center + '" r="' + radius + '" fill="none" stroke="#F0E7D4" stroke-width="' + stroke + '"/>' +
+        arcs +
+        '<text x="' + center + '" y="' + (center - 4) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="26" font-weight="600" fill="#2B2420">' + total + '</text>' +
+        '<text x="' + center + '" y="' + (center + 18) + '" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="#6B5F54">JAWABAN</text>' +
+      '</svg>' +
+      '<div class="donut-total">Total jawaban dianalisis</div>';
+
+    $("legendStats").innerHTML = ["pos","neu","neg"].map(function(key){
+      var meta = SENTIMENT_META[key];
+      var pct = total > 0 ? Math.round(counts[key] / total * 100) : 0;
+      return '<div class="legend-row">' +
+        '<div class="legend-dot" style="background:' + meta.bar + ';"></div>' +
+        '<div class="legend-label">' + meta.label + '</div>' +
+        '<div class="legend-count">' + counts[key] + '</div>' +
+        '<div class="legend-pct">' + pct + '%</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function renderAspects(){
+    $("aspectPanel").style.display = "block";
+    var aspectStats = {};
+    Object.keys(ASPECTS).concat(["Lainnya"]).forEach(function(a){
+      aspectStats[a] = {pos:0, neu:0, neg:0, total:0};
+    });
+    results.forEach(function(r){
+      r.aspects.forEach(function(a){
+        if(!aspectStats[a]) aspectStats[a] = {pos:0, neu:0, neg:0, total:0};
+        aspectStats[a][r.sentiment]++;
+        aspectStats[a].total++;
+      });
+    });
+
+    var aspectNames = Object.keys(aspectStats).filter(function(a){ return aspectStats[a].total > 0; });
+    aspectNames.sort(function(a,b){ return aspectStats[b].total - aspectStats[a].total; });
+
+    if(aspectNames.length === 0){
+      $("aspectList").innerHTML = '<div class="empty-state" style="color:var(--ink-soft);"><p>Belum ada aspek terdeteksi.</p></div>';
+      return;
+    }
+
+    $("aspectList").innerHTML = aspectNames.map(function(a){
+      var s = aspectStats[a];
+      var t = s.total;
+      var posW = t ? (s.pos/t*100) : 0;
+      var neuW = t ? (s.neu/t*100) : 0;
+      var negW = t ? (s.neg/t*100) : 0;
+      return '<div class="aspect-row">' +
+        '<div class="aspect-head">' +
+          '<div class="aspect-name">' + escapeHtml(a) + '</div>' +
+          '<div class="aspect-total">' + t + ' jawaban &middot; ' + s.pos + ' pos / ' + s.neu + ' netral / ' + s.neg + ' neg</div>' +
+        '</div>' +
+        '<div class="aspect-bar">' +
+          '<span style="width:' + posW + '%; background:' + SENTIMENT_META.pos.bar + ';"></span>' +
+          '<span style="width:' + neuW + '%; background:' + SENTIMENT_META.neu.bar + ';"></span>' +
+          '<span style="width:' + negW + '%; background:' + SENTIMENT_META.neg.bar + ';"></span>' +
+        '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function refreshAspectFilter(){
+    var select = $("filterAspect");
+    var current = select.value;
+    var aspectSet = new Set();
+    results.forEach(function(r){ r.aspects.forEach(function(a){ aspectSet.add(a); }); });
+    var list = Array.from(aspectSet).sort();
+    select.innerHTML = '<option value="">Semua aspek</option>' + list.map(function(a){
+      return '<option value="' + escapeHtml(a) + '">' + escapeHtml(a) + '</option>';
+    }).join("");
+    select.value = list.indexOf(current) >= 0 ? current : "";
+  }
+
+  function renderWall(){
+    $("wallPanel").style.display = "block";
+    var grid = $("noteGrid");
+    var search = $("searchInput").value.trim().toLowerCase();
+    var sentimentFilter = $("filterSentiment").value;
+    var aspectFilter = $("filterAspect").value;
+
+    var list = results.filter(function(r){
+      if(search && r.text.toLowerCase().indexOf(search) === -1) return false;
+      if(sentimentFilter && r.sentiment !== sentimentFilter) return false;
+      if(aspectFilter && r.aspects.indexOf(aspectFilter) === -1) return false;
+      return true;
+    });
+
+    if(list.length === 0){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;">' +
+        '<div class="glyph">✎</div><p>Tidak ada jawaban yang cocok dengan filter saat ini.</p>' +
+      '</div>';
+      return;
+    }
+
+    grid.innerHTML = list.map(function(r){
+      return '<div class="note ' + r.sentiment + '" style="transform:rotate(' + r.rotation + 'deg);">' +
+        '<div class="note-tags">' +
+          r.aspects.map(function(a){ return '<span class="note-tag">' + escapeHtml(a) + '</span>'; }).join("") +
+        '</div>' +
+        escapeHtml(r.text) +
+        '<div class="note-score">skor ' + (r.score > 0 ? "+" : "") + r.score + '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function renderAll(){
+    renderOverview();
+    renderAspects();
+    refreshAspectFilter();
+    renderWall();
+  }
+
+  // ---------- events ----------
+  $("inputResponses").addEventListener("input", function(){
+    var lines = $("inputResponses").value.split("\n").filter(function(l){ return l.trim().length > 0; });
+    $("lineCount").textContent = lines.length + " jawaban terdeteksi";
+  });
+
+  $("btnAnalyze").addEventListener("click", function(){
+    var raw = $("inputResponses").value;
+    var lines = raw.split("\n").filter(function(l){ return l.trim().length > 0; });
+    if(lines.length === 0){
+      var ta = $("inputResponses");
+      ta.style.borderColor = "var(--neg-ink)";
+      ta.focus();
+      setTimeout(function(){ ta.style.borderColor = ""; }, 900);
+      return;
+    }
+    analyzeAll(lines);
+    renderAll();
+    $("overviewPanel").scrollIntoView({ behavior:"smooth", block:"nearest" });
+  });
+
+  $("btnClear").addEventListener("click", function(){
+    $("inputResponses").value = "";
+    $("lineCount").textContent = "0 jawaban terdeteksi";
+    results = [];
+    ["overviewPanel","aspectPanel","wallPanel"].forEach(function(id){ $(id).style.display = "none"; });
+  });
+
+  $("btnSample").addEventListener("click", function(){
+    var sample = [
+      "Gurunya sangat membantu dan sabar menjelaskan materi yang sulit.",
+      "Fasilitas laboratorium masih kurang lengkap dan alatnya sering rusak.",
+      "Suasana kelas nyaman dan teman-teman ramah, saya senang belajar di sini.",
+      "Pelayanan tata usaha lambat, urus surat saja bisa berhari-hari.",
+      "Kurikulumnya cukup jelas tapi tugasnya terlalu banyak dan membosankan.",
+      "Toilet sekolah kotor dan jarang dibersihkan, tolong diperbaiki.",
+      "Wifi sekolah sering mati, jadi mengganggu proses pembelajaran online.",
+      "Guru-guru di sini profesional dan selalu tanggap kalau ada pertanyaan.",
+      "Kantin bersih dan harganya terjangkau, saya puas dengan pelayanannya.",
+      "Lapangan olahraga sempit dan kurang terawat untuk kegiatan ekstrakurikuler.",
+      "Perpustakaan lengkap dan nyaman untuk belajar kelompok maupun sendiri.",
+      "Prosedur pendaftaran ulang cukup ribet dan tidak jelas informasinya.",
+      "Saya senang dengan metode pengajaran yang kreatif dan interaktif.",
+      "Keamanan sekolah kurang, beberapa kali ada laporan barang hilang.",
+      "Secara keseluruhan sekolah ini cukup baik meski masih ada beberapa hal yang perlu diperbaiki."
+    ];
+    $("inputResponses").value = sample.join("\n");
+    $("lineCount").textContent = sample.length + " jawaban terdeteksi";
+  });
+
+  $("btnExport").addEventListener("click", function(){
+    if(results.length === 0) return;
+    var rows = [["Jawaban","Sentimen","Skor","Aspek"]];
+    results.forEach(function(r){
+      rows.push([r.text, SENTIMENT_META[r.sentiment].label, r.score, r.aspects.join(" | ")]);
+    });
+    var csv = rows.map(function(row){
+      return row.map(function(cell){
+        var v = String(cell).replace(/"/g,'""');
+        return /[",\n]/.test(v) ? '"' + v + '"' : v;
+      }).join(",");
+    }).join("\n");
+
+    var blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "laporan-sentimen-survei.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  ["searchInput","filterSentiment","filterAspect"].forEach(function(id){
+    $(id).addEventListener("input", renderWall);
+    $(id).addEventListener("change", renderWall);
+  });
+
+})();
+</script>
+</body>
+</html>
