@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Absensi Wajah — Sistem Sederhana</title>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --panel:#121821;
+    --panel-2:#182130;
+    --ink:#e9eef4;
+    --muted:#7c8aa0;
+    --accent:#31e0a5;
+    --accent-2:#ff7a52;
+    --danger:#ff5c6c;
+    --line:#22303f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1000px 500px at 90% -10%, rgba(49,224,165,.10), transparent 60%),
+      radial-gradient(800px 500px at 0% 110%, rgba(255,122,82,.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding:24px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+  header h1{font-size:20px;margin:0;letter-spacing:.2px;}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+  .status{
+    display:flex;align-items:center;gap:8px;
+    font-size:12.5px;color:var(--muted);
+    background:var(--panel);border:1px solid var(--line);
+    padding:8px 14px;border-radius:999px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);}
+  .dot.on{background:var(--accent);box-shadow:0 0 8px var(--accent);}
+
+  .grid{display:grid;grid-template-columns:1fr 380px;gap:20px;}
+  @media (max-width:900px){.grid{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:18px;
+  }
+  .card h2{font-size:14px;margin:0 0 14px;color:var(--ink);display:flex;align-items:center;gap:8px;}
+  .card h2 .tag{font-size:10px;color:var(--accent);background:rgba(49,224,165,.12);padding:3px 8px;border-radius:6px;font-weight:700;letter-spacing:.5px;}
+
+  .video-box{
+    position:relative;
+    width:100%;
+    aspect-ratio:4/3;
+    background:#05080b;
+    border-radius:12px;
+    overflow:hidden;
+    border:1px solid var(--line);
+  }
+  video, canvas{position:absolute;top:0;left:0;width:100%;height:100%;}
+  video{object-fit:cover;transform:scaleX(-1);}
+  canvas{transform:scaleX(-1);}
+
+  .controls{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  button{
+    border:none;
+    border-radius:10px;
+    padding:11px 16px;
+    font-size:13px;
+    font-weight:700;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .btn-primary{background:var(--accent);color:#04160f;}
+  .btn-primary:hover{background:#25c691;}
+  .btn-secondary{background:var(--panel-2);color:var(--ink);border:1px solid var(--line);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(255,92,108,.4);}
+  .btn-danger:hover{background:rgba(255,92,108,.1);}
+  button:disabled{opacity:.4;cursor:not-allowed;}
+
+  .row{display:flex;gap:10px;margin-top:12px;}
+  input[type=text]{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:11px 13px;
+    border-radius:10px;
+    font-size:13px;
+    outline:none;
+  }
+  input[type=text]:focus{border-color:var(--accent);}
+
+  .mode-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .mode-btn{
+    flex:1;
+    padding:9px;
+    text-align:center;
+    border-radius:9px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:12.5px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .mode-btn.active{background:rgba(49,224,165,.12);border-color:var(--accent);color:var(--accent);}
+
+  .list{max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+  .person{
+    display:flex;align-items:center;justify-content:between;gap:10px;
+    background:var(--panel-2);border:1px solid var(--line);
+    padding:9px 12px;border-radius:10px;font-size:13px;
+  }
+  .person .avatar{
+    width:30px;height:30px;border-radius:8px;flex-shrink:0;
+    background:linear-gradient(135deg,var(--accent),#17b894);
+    display:flex;align-items:center;justify-content:center;
+    font-weight:800;color:#03150f;font-size:12px;
+  }
+  .person .name{flex:1;}
+  .person .del{cursor:pointer;color:var(--muted);font-size:12px;}
+  .person .del:hover{color:var(--danger);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+  td.name{font-weight:700;}
+  .badge{font-size:10.5px;background:rgba(49,224,165,.12);color:var(--accent);padding:2px 8px;border-radius:6px;}
+
+  .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:18px 0;}
+
+  .toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#04160f;
+    padding:12px 20px;border-radius:10px;font-weight:700;font-size:13px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    z-index:99;opacity:0;transition:.3s;pointer-events:none;
+  }
+  .toast.show{opacity:1;top:26px;}
+
+  .hint{font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>🎯 Absensi Wajah Otomatis</h1>
+      <p>Sistem presensi berbasis pengenalan wajah — deteksi &amp; pencocokan langsung di browser</p>
+    </div>
+    <div class="status"><span class="dot" id="statusDot"></span><span id="statusText">Model belum dimuat</span></div>
+  </header>
+
+  <div class="grid">
+    <!-- KIRI: kamera -->
+    <div class="card">
+      <h2>Kamera <span class="tag" id="modeTag">DAFTAR</span></h2>
+
+      <div class="mode-toggle">
+        <div class="mode-btn active" id="btnModeRegister" onclick="setMode('register')">Daftarkan Wajah</div>
+        <div class="mode-btn" id="btnModeAttend" onclick="setMode('attend')">Mulai Absensi</div>
+      </div>
+
+      <div class="video-box">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="overlay"></canvas>
+      </div>
+
+      <div class="row" id="registerRow">
+        <input type="text" id="nameInput" placeholder="Nama lengkap..." />
+        <button class="btn-primary" onclick="registerFace()" id="btnRegister" disabled>Simpan Wajah</button>
+      </div>
+
+      <div class="controls">
+        <button class="btn-secondary" onclick="startCamera()" id="btnCamera">Nyalakan Kamera</button>
+        <button class="btn-secondary" onclick="exportCSV()">Export CSV</button>
+        <button class="btn-danger" onclick="resetAll()">Reset Semua</button>
+      </div>
+
+      <p class="hint">Mode <b>Daftarkan Wajah</b>: posisikan satu wajah di kamera, isi nama, lalu klik Simpan Wajah.<br>
+      Mode <b>Mulai Absensi</b>: sistem otomatis mendeteksi &amp; mencocokkan wajah, lalu mencatat kehadiran sekali per orang.<br>
+      Catatan: data tersimpan sementara di sesi ini (belum ada database) — gunakan Export CSV untuk menyimpan rekap.</p>
+    </div>
+
+    <!-- KANAN: data -->
+    <div class="card" style="margin-bottom:16px;">
+      <h2>Wajah Terdaftar <span class="tag" id="countTag">0</span></h2>
+      <div class="list" id="peopleList">
+        <div class="empty">Belum ada wajah terdaftar</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2>Riwayat Absensi Hari Ini</h2>
+    <table>
+      <thead><tr><th>#</th><th>Nama</th><th>Waktu</th><th>Status</th></tr></thead>
+      <tbody id="logBody">
+        <tr><td colspan="4" class="empty">Belum ada catatan absensi</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+const video = document.getElementById('video');
+const overlay = document.getElementById('overlay');
+const ctx = overlay.getContext('2d');
+
+let registered = [];   // { name, descriptor }
+let attendanceLog = []; // { name, time }
+let mode = 'register';
+let modelsReady = false;
+let cameraOn = false;
+let detectInterval = null;
+
+function setStatus(text, on){
+  document.getElementById('statusText').textContent = text;
+  document.getElementById('statusDot').classList.toggle('on', !!on);
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+async function loadModels(){
+  setStatus('Memuat model AI...', false);
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+  modelsReady = true;
+  setStatus('Model siap — nyalakan kamera', false);
+}
+loadModels();
+
+async function startCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { width:640, height:480 } });
+    video.srcObject = stream;
+    await new Promise(res => video.onloadedmetadata = res);
+    overlay.width = video.clientWidth;
+    overlay.height = video.clientHeight;
+    cameraOn = true;
+    document.getElementById('btnCamera').textContent = 'Kamera Aktif';
+    document.getElementById('btnCamera').disabled = true;
+    document.getElementById('btnRegister').disabled = false;
+    setStatus(modelsReady ? 'Kamera aktif' : 'Kamera aktif, menunggu model...', true);
+    runDetectionLoop();
+  }catch(err){
+    showToast('Gagal mengakses kamera: ' + err.message);
+  }
+}
+
+function setMode(m){
+  mode = m;
+  document.getElementById('btnModeRegister').classList.toggle('active', m==='register');
+  document.getElementById('btnModeAttend').classList.toggle('active', m==='attend');
+  document.getElementById('modeTag').textContent = m === 'register' ? 'DAFTAR' : 'ABSENSI';
+  document.getElementById('registerRow').style.display = m === 'register' ? 'flex' : 'none';
+}
+
+let lastDetection = null;
+
+async function runDetectionLoop(){
+  if(detectInterval) clearInterval(detectInterval);
+  detectInterval = setInterval(async () => {
+    if(!modelsReady || !cameraOn || video.readyState < 2) return;
+
+    const result = await faceapi
+      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+
+    ctx.clearRect(0,0,overlay.width, overlay.height);
+    lastDetection = result || null;
+
+    if(result){
+      const box = result.detection.box;
+      const scaleX = overlay.width / video.videoWidth;
+      const scaleY = overlay.height / video.videoHeight;
+      ctx.strokeStyle = '#31e0a5';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(box.x*scaleX, box.y*scaleY, box.width*scaleX, box.height*scaleY);
+
+      if(mode === 'attend' && registered.length > 0){
+        const match = findBestMatch(result.descriptor);
+        if(match){
+          ctx.fillStyle = 'rgba(49,224,165,0.85)';
+          ctx.font = '14px Segoe UI';
+          ctx.fillText(match.name, box.x*scaleX, box.y*scaleY - 8);
+          markAttendance(match.name);
+        } else {
+          ctx.fillStyle = 'rgba(255,122,82,0.9)';
+          ctx.font = '14px Segoe UI';
+          ctx.fillText('Tidak dikenali', box.x*scaleX, box.y*scaleY - 8);
+        }
+      }
+    }
+  }, 800);
+}
+
+function findBestMatch(descriptor){
+  if(registered.length === 0) return null;
+  let best = null, bestDist = 999;
+  for(const person of registered){
+    const dist = faceapi.euclideanDistance(descriptor, person.descriptor);
+    if(dist < bestDist){ bestDist = dist; best = person; }
+  }
+  return bestDist < 0.55 ? best : null;
+}
+
+function registerFace(){
+  const name = document.getElementById('nameInput').value.trim();
+  if(!name){ showToast('Isi nama terlebih dahulu'); return; }
+  if(!lastDetection){ showToast('Wajah tidak terdeteksi, coba lagi'); return; }
+
+  registered.push({ name, descriptor: lastDetection.descriptor });
+  document.getElementById('nameInput').value = '';
+  showToast('✅ Wajah "' + name + '" berhasil didaftarkan');
+  renderPeople();
+}
+
+function renderPeople(){
+  const list = document.getElementById('peopleList');
+  document.getElementById('countTag').textContent = registered.length;
+  if(registered.length === 0){
+    list.innerHTML = '<div class="empty">Belum ada wajah terdaftar</div>';
+    return;
+  }
+  list.innerHTML = registered.map((p, i) => `
+    <div class="person">
+      <div class="avatar">${p.name.charAt(0).toUpperCase()}</div>
+      <div class="name">${p.name}</div>
+      <div class="del" onclick="removePerson(${i})">Hapus</div>
+    </div>
+  `).join('');
+}
+
+function removePerson(i){
+  registered.splice(i,1);
+  renderPeople();
+}
+
+const attendedToday = new Set();
+
+function markAttendance(name){
+  if(attendedToday.has(name)) return;
+  attendedToday.add(name);
+  const time = new Date().toLocaleTimeString('id-ID');
+  attendanceLog.push({ name, time });
+  showToast('📋 Absensi tercatat: ' + name);
+  renderLog();
+}
+
+function renderLog(){
+  const body = document.getElementById('logBody');
+  if(attendanceLog.length === 0){
+    body.innerHTML = '<tr><td colspan="4" class="empty">Belum ada catatan absensi</td></tr>';
+    return;
+  }
+  body.innerHTML = attendanceLog.map((l, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td class="name">${l.name}</td>
+      <td>${l.time}</td>
+      <td><span class="badge">Hadir</span></td>
+    </tr>
+  `).join('');
+}
+
+function exportCSV(){
+  if(attendanceLog.length === 0){ showToast('Belum ada data absensi'); return; }
+  let csv = 'No,Nama,Waktu,Status\n';
+  attendanceLog.forEach((l,i) => { csv += `${i+1},${l.name},${l.time},Hadir\n`; });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'absensi_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function resetAll(){
+  if(!confirm('Hapus semua data wajah terdaftar dan riwayat absensi?')) return;
+  registered = [];
+  attendanceLog = [];
+  attendedToday.clear();
+  renderPeople();
+  renderLog();
+  showToast('Semua data direset');
+}
+
+window.addEventListener('resize', () => {
+  if(cameraOn){
+    overlay.width = video.clientWidth;
+    overlay.height = video.clientHeight;
+  }
+});
+</script>
+</body>
+</html>
