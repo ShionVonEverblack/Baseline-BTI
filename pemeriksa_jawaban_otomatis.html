@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asisten Pemeriksa Jawaban Otomatis</title>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --panel:#121821;
+    --panel-2:#182130;
+    --panel-3:#1e2937;
+    --ink:#e9eef4;
+    --muted:#7c8aa0;
+    --accent:#31e0a5;
+    --accent-2:#ff7a52;
+    --danger:#ff5c6c;
+    --line:#22303f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1000px 500px at 90% -10%, rgba(49,224,165,.10), transparent 60%),
+      radial-gradient(800px 500px at 0% 110%, rgba(255,122,82,.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding:24px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  header{margin-bottom:20px;}
+  header h1{font-size:20px;margin:0;}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap;}
+  .tab{
+    padding:10px 18px;border-radius:10px;background:var(--panel);
+    border:1px solid var(--line);color:var(--muted);font-size:13px;font-weight:700;
+    cursor:pointer;
+  }
+  .tab.active{background:rgba(49,224,165,.12);border-color:var(--accent);color:var(--accent);}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:18px;
+  }
+  .card h2{font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:8px;justify-content:space-between;}
+  .card .sub{color:var(--muted);font-size:12.5px;margin:0 0 16px;}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  input[type=text], input[type=number], textarea, select{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:10px 12px;
+    border-radius:9px;
+    font-size:13px;
+    outline:none;
+    font-family:inherit;
+  }
+  input:focus, textarea:focus, select:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:60px;}
+
+  button{
+    border:none;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;
+  }
+  .btn-primary{background:var(--accent);color:#04160f;}
+  .btn-primary:hover{background:#25c691;}
+  .btn-secondary{background:var(--panel-3);color:var(--ink);border:1px solid var(--line);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:transparent;color:var(--danger);border:1px solid rgba(255,92,108,.4);}
+  .btn-danger:hover{background:rgba(255,92,108,.1);}
+  .btn-sm{padding:6px 10px;font-size:11.5px;}
+
+  .qrow{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+  }
+  .qrow-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+  .qrow-head b{font-size:13px;}
+  .qrow-body{display:grid;grid-template-columns:120px 1fr 90px;gap:10px;align-items:start;}
+  @media (max-width:700px){.qrow-body{grid-template-columns:1fr;}}
+  .qrow-body label{font-size:11px;color:var(--muted);display:block;margin-bottom:4px;}
+
+  .stud-block{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:14px;margin-bottom:14px;
+  }
+  .stud-head{display:flex;gap:10px;align-items:center;margin-bottom:12px;}
+  .stud-head input{flex:1;}
+  .stud-answers{display:flex;flex-direction:column;gap:8px;}
+  .ans-row{display:grid;grid-template-columns:160px 1fr;gap:10px;align-items:center;}
+  @media (max-width:700px){.ans-row{grid-template-columns:1fr;}}
+  .ans-row label{font-size:12px;color:var(--muted);}
+  .ans-row select, .ans-row input, .ans-row textarea{width:100%;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);}
+  th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.4px;}
+  td.name{font-weight:700;}
+  .score{font-weight:800;font-size:14px;}
+  .score.high{color:var(--accent);}
+  .score.mid{color:#ffd166;}
+  .score.low{color:var(--danger);}
+  .bar-bg{background:var(--panel-3);border-radius:6px;height:6px;width:100%;overflow:hidden;margin-top:4px;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),#17b894);}
+
+  .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:24px 0;}
+  .toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#04160f;
+    padding:12px 20px;border-radius:10px;font-weight:700;font-size:13px;
+    box-shadow:0 10px 30px rgba(0,0,0,.4);
+    z-index:99;opacity:0;transition:.3s;pointer-events:none;
+  }
+  .toast.show{opacity:1;top:26px;}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;}
+  .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;}
+  @media (max-width:700px){.stat-grid{grid-template-columns:1fr;}}
+  .stat-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .stat-card .v{font-size:24px;font-weight:800;color:var(--accent);}
+  .stat-card .l{font-size:11.5px;color:var(--muted);margin-top:2px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📝 Asisten Pemeriksa Jawaban Otomatis</h1>
+    <p>Buat kunci jawaban (pilihan ganda &amp; esai berbasis kata kunci), input jawaban siswa, dan dapatkan nilai otomatis.</p>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="kunci" onclick="switchTab('kunci')">1. Kunci Jawaban</div>
+    <div class="tab" data-tab="siswa" onclick="switchTab('siswa')">2. Jawaban Siswa</div>
+    <div class="tab" data-tab="hasil" onclick="switchTab('hasil')">3. Hasil Penilaian</div>
+  </div>
+
+  <!-- TAB 1: KUNCI JAWABAN -->
+  <div class="panel active" id="panel-kunci">
+    <div class="card">
+      <h2>Susun Soal &amp; Kunci Jawaban <span></span></h2>
+      <p class="sub">Tambahkan soal pilihan ganda (dicocokkan persis) atau esai (dinilai dari kemunculan kata kunci).</p>
+      <div id="questionList"></div>
+      <div class="toolbar">
+        <button class="btn-primary" onclick="addQuestion('pg')">+ Soal Pilihan Ganda</button>
+        <button class="btn-secondary" onclick="addQuestion('esai')">+ Soal Esai</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: JAWABAN SISWA -->
+  <div class="panel" id="panel-siswa">
+    <div class="card">
+      <h2>Input Jawaban Siswa</h2>
+      <p class="sub">Tambahkan siswa satu per satu, lalu isi jawaban untuk tiap nomor soal.</p>
+      <div id="studentList"></div>
+      <div class="toolbar">
+        <button class="btn-primary" onclick="addStudent()">+ Tambah Siswa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: HASIL -->
+  <div class="panel" id="panel-hasil">
+    <div id="statGrid" class="stat-grid" style="display:none;">
+      <div class="stat-card"><div class="v" id="statRata">0</div><div class="l">Rata-rata Nilai</div></div>
+      <div class="stat-card"><div class="v" id="statTertinggi">0</div><div class="l">Nilai Tertinggi</div></div>
+      <div class="stat-card"><div class="v" id="statTerendah">0</div><div class="l">Nilai Terendah</div></div>
+    </div>
+    <div class="card">
+      <h2>Hasil Penilaian Otomatis</h2>
+      <p class="sub">Klik "Periksa Semua Jawaban" setelah kunci jawaban dan data siswa siap.</p>
+      <div class="toolbar" style="margin-bottom:16px;">
+        <button class="btn-primary" onclick="gradeAll()">✅ Periksa Semua Jawaban</button>
+        <button class="btn-secondary" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+      <table>
+        <thead><tr><th>#</th><th>Nama</th><th>Benar PG</th><th>Skor Esai</th><th>Nilai Akhir</th></tr></thead>
+        <tbody id="resultBody">
+          <tr><td colspan="5" class="empty">Belum ada hasil. Isi kunci jawaban &amp; jawaban siswa terlebih dahulu.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let questions = [];  // {id, type:'pg'|'esai', text, key: 'A' | {keywords:[...], weight}, points}
+let students = [];   // {id, name, answers: {qid: value}}
+let results = [];    // {id, name, correctPG, essayScore, finalScore}
+let qCounter = 0, sCounter = 0;
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+// ===== KUNCI JAWABAN =====
+function addQuestion(type){
+  qCounter++;
+  questions.push({
+    id: 'q' + qCounter,
+    type,
+    text: '',
+    keyPG: 'A',
+    keywords: '',
+    points: 10
+  });
+  renderQuestions();
+  renderStudents(); // supaya form jawaban ikut update
+}
+
+function removeQuestion(id){
+  questions = questions.filter(q => q.id !== id);
+  students.forEach(s => delete s.answers[id]);
+  renderQuestions();
+  renderStudents();
+}
+
+function updateQuestion(id, field, value){
+  const q = questions.find(q => q.id === id);
+  if(q) q[field] = value;
+}
+
+function renderQuestions(){
+  const el = document.getElementById('questionList');
+  if(questions.length === 0){
+    el.innerHTML = '<div class="empty">Belum ada soal. Tambahkan soal pilihan ganda atau esai.</div>';
+    return;
+  }
+  el.innerHTML = questions.map((q, i) => {
+    if(q.type === 'pg'){
+      return `
+      <div class="qrow">
+        <div class="qrow-head">
+          <b>Soal ${i+1} — Pilihan Ganda</b>
+          <button class="btn-danger btn-sm" onclick="removeQuestion('${q.id}')">Hapus</button>
+        </div>
+        <div class="qrow-body">
+          <div>
+            <label>Kunci Jawaban</label>
+            <select onchange="updateQuestion('${q.id}','keyPG', this.value)">
+              ${['A','B','C','D','E'].map(l => `<option value="${l}" ${q.keyPG===l?'selected':''}>${l}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label>Teks Soal (opsional)</label>
+            <input type="text" placeholder="Contoh: Ibu kota Indonesia adalah..." value="${q.text}" oninput="updateQuestion('${q.id}','text', this.value)">
+          </div>
+          <div>
+            <label>Poin</label>
+            <input type="number" value="${q.points}" min="1" oninput="updateQuestion('${q.id}','points', Number(this.value))">
+          </div>
+        </div>
+      </div>`;
+    } else {
+      return `
+      <div class="qrow">
+        <div class="qrow-head">
+          <b>Soal ${i+1} — Esai</b>
+          <button class="btn-danger btn-sm" onclick="removeQuestion('${q.id}')">Hapus</button>
+        </div>
+        <div class="qrow-body" style="grid-template-columns:1fr 1fr 90px;">
+          <div>
+            <label>Teks Soal</label>
+            <input type="text" placeholder="Contoh: Jelaskan proses fotosintesis" value="${q.text}" oninput="updateQuestion('${q.id}','text', this.value)">
+          </div>
+          <div>
+            <label>Kata Kunci Jawaban (pisahkan koma)</label>
+            <input type="text" placeholder="klorofil, cahaya matahari, oksigen, karbon dioksida" value="${q.keywords}" oninput="updateQuestion('${q.id}','keywords', this.value)">
+          </div>
+          <div>
+            <label>Poin</label>
+            <input type="number" value="${q.points}" min="1" oninput="updateQuestion('${q.id}','points', Number(this.value))">
+          </div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+// ===== SISWA =====
+function addStudent(){
+  sCounter++;
+  const s = { id: 's' + sCounter, name: '', answers: {} };
+  questions.forEach(q => s.answers[q.id] = '');
+  students.push(s);
+  renderStudents();
+}
+
+function removeStudent(id){
+  students = students.filter(s => s.id !== id);
+  renderStudents();
+}
+
+function updateStudentName(id, value){
+  const s = students.find(s => s.id === id);
+  if(s) s.name = value;
+}
+
+function updateStudentAnswer(sid, qid, value){
+  const s = students.find(s => s.id === sid);
+  if(s) s.answers[qid] = value;
+}
+
+function renderStudents(){
+  const el = document.getElementById('studentList');
+  if(students.length === 0){
+    el.innerHTML = '<div class="empty">Belum ada siswa. Tambahkan siswa untuk mulai mengisi jawaban.</div>';
+    return;
+  }
+  if(questions.length === 0){
+    el.innerHTML = '<div class="empty">Tambahkan soal di tab "Kunci Jawaban" terlebih dahulu.</div>';
+    return;
+  }
+  el.innerHTML = students.map(s => {
+    questions.forEach(q => { if(!(q.id in s.answers)) s.answers[q.id] = ''; });
+    return `
+    <div class="stud-block">
+      <div class="stud-head">
+        <input type="text" placeholder="Nama siswa..." value="${s.name}" oninput="updateStudentName('${s.id}', this.value)">
+        <button class="btn-danger btn-sm" onclick="removeStudent('${s.id}')">Hapus</button>
+      </div>
+      <div class="stud-answers">
+        ${questions.map((q,i) => {
+          if(q.type === 'pg'){
+            return `
+            <div class="ans-row">
+              <label>No.${i+1} (PG)${q.text ? ' — '+q.text : ''}</label>
+              <select onchange="updateStudentAnswer('${s.id}','${q.id}', this.value)">
+                <option value="">-- pilih --</option>
+                ${['A','B','C','D','E'].map(l => `<option value="${l}" ${s.answers[q.id]===l?'selected':''}>${l}</option>`).join('')}
+              </select>
+            </div>`;
+          } else {
+            return `
+            <div class="ans-row">
+              <label>No.${i+1} (Esai)${q.text ? ' — '+q.text : ''}</label>
+              <textarea placeholder="Tulis jawaban siswa di sini..." oninput="updateStudentAnswer('${s.id}','${q.id}', this.value)">${s.answers[q.id]||''}</textarea>
+            </div>`;
+          }
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== PENILAIAN =====
+function gradeAll(){
+  if(questions.length === 0){ showToast('Belum ada soal / kunci jawaban'); return; }
+  if(students.length === 0){ showToast('Belum ada data siswa'); return; }
+
+  const totalPoints = questions.reduce((sum,q) => sum + Number(q.points||0), 0) || 1;
+
+  results = students.map(s => {
+    let earned = 0;
+    let correctPG = 0, totalPG = 0;
+    let essayScoreSum = 0, essayMax = 0;
+
+    questions.forEach(q => {
+      const ans = (s.answers[q.id] || '').toString().trim();
+      if(q.type === 'pg'){
+        totalPG++;
+        if(ans.toUpperCase() === q.keyPG.toUpperCase()){
+          earned += Number(q.points);
+          correctPG++;
+        }
+      } else {
+        const keywords = q.keywords.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+        essayMax += Number(q.points);
+        if(keywords.length === 0 || !ans){
+          // tidak ada kata kunci / jawaban kosong -> 0
+        } else {
+          const ansLower = ans.toLowerCase();
+          const found = keywords.filter(k => ansLower.includes(k)).length;
+          const ratio = found / keywords.length;
+          const pts = Math.round(ratio * Number(q.points));
+          earned += pts;
+          essayScoreSum += pts;
+        }
+      }
+    });
+
+    const finalScore = Math.round((earned / totalPoints) * 100);
+    return {
+      id: s.id,
+      name: s.name || '(Tanpa nama)',
+      correctPG: totalPG > 0 ? `${correctPG}/${totalPG}` : '-',
+      essayScore: essayMax > 0 ? `${essayScoreSum}/${essayMax}` : '-',
+      finalScore
+    };
+  });
+
+  renderResults();
+  switchTab('hasil');
+  showToast('✅ Penilaian selesai untuk ' + results.length + ' siswa');
+}
+
+function renderResults(){
+  const body = document.getElementById('resultBody');
+  const statGrid = document.getElementById('statGrid');
+
+  if(results.length === 0){
+    body.innerHTML = '<tr><td colspan="5" class="empty">Belum ada hasil. Isi kunci jawaban & jawaban siswa terlebih dahulu.</td></tr>';
+    statGrid.style.display = 'none';
+    return;
+  }
+
+  statGrid.style.display = 'grid';
+  const scores = results.map(r => r.finalScore);
+  const avg = Math.round(scores.reduce((a,b)=>a+b,0) / scores.length);
+  document.getElementById('statRata').textContent = avg;
+  document.getElementById('statTertinggi').textContent = Math.max(...scores);
+  document.getElementById('statTerendah').textContent = Math.min(...scores);
+
+  body.innerHTML = results.map((r,i) => {
+    const cls = r.finalScore >= 75 ? 'high' : r.finalScore >= 50 ? 'mid' : 'low';
+    return `
+    <tr>
+      <td>${i+1}</td>
+      <td class="name">${r.name}</td>
+      <td>${r.correctPG}</td>
+      <td>${r.essayScore}</td>
+      <td>
+        <span class="score ${cls}">${r.finalScore}</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${r.finalScore}%"></div></div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function exportCSV(){
+  if(results.length === 0){ showToast('Belum ada hasil untuk diekspor'); return; }
+  let csv = 'No,Nama,Benar PG,Skor Esai,Nilai Akhir\n';
+  results.forEach((r,i) => { csv += `${i+1},${r.name},${r.correctPG},${r.essayScore},${r.finalScore}\n`; });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'hasil_penilaian.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// inisialisasi awal: 1 soal PG + 1 soal esai + 1 siswa contoh
+addQuestion('pg');
+addQuestion('esai');
+addStudent();
+</script>
+</body>
+</html>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generator Soal Latihan — AI</title>
+<style>
+  :root{
+    --bg:#0b0f14;
+    --panel:#121821;
+    --panel-2:#182130;
+    --panel-3:#1e2937;
+    --ink:#e9eef4;
+    --muted:#7c8aa0;
+    --accent:#31e0a5;
+    --accent-2:#ff7a52;
+    --danger:#ff5c6c;
+    --line:#22303f;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(1000px 500px at 90% -10%, rgba(49,224,165,.10), transparent 60%),
+      radial-gradient(800px 500px at 0% 110%, rgba(255,122,82,.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Segoe UI', system-ui, -apple-system, sans-serif;
+    padding:24px;
+  }
+  .wrap{max-width:960px;margin:0 auto;}
+
+  header{margin-bottom:20px;}
+  header h1{font-size:20px;margin:0;}
+  header p{margin:4px 0 0;color:var(--muted);font-size:13px;}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:18px;
+  }
+  .card h2{font-size:14px;margin:0 0 14px;}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media (max-width:640px){.form-grid{grid-template-columns:1fr;}}
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field.full{grid-column:1/-1;}
+  .field label{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+
+  input[type=text], input[type=number], select, textarea{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:11px 13px;
+    border-radius:9px;
+    font-size:13px;
+    outline:none;
+    font-family:inherit;
+  }
+  input:focus, select:focus, textarea:focus{border-color:var(--accent);}
+  textarea{resize:vertical;min-height:60px;}
+
+  .chip-select{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip-opt{
+    padding:8px 14px;border-radius:999px;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--muted);font-size:12.5px;font-weight:700;cursor:pointer;
+  }
+  .chip-opt.active{background:rgba(49,224,165,.14);border-color:var(--accent);color:var(--accent);}
+
+  button{border:none;border-radius:10px;padding:12px 20px;font-size:13.5px;font-weight:700;cursor:pointer;transition:.15s;}
+  .btn-primary{background:var(--accent);color:#04160f;}
+  .btn-primary:hover{background:#25c691;}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-secondary{background:var(--panel-3);color:var(--ink);border:1px solid var(--line);}
+  .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+  .toolbar{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+
+  .loading{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:20px 0;}
+  .spinner{width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .qcard{
+    background:var(--panel-2);border:1px solid var(--line);border-radius:12px;
+    padding:16px;margin-bottom:14px;
+  }
+  .qcard .qhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;}
+  .qcard .qnum{font-size:11px;color:var(--accent);font-weight:800;letter-spacing:.4px;text-transform:uppercase;}
+  .qcard .qtext{font-size:14.5px;line-height:1.55;margin:6px 0 12px;}
+  .qcard .badge{font-size:10.5px;background:rgba(255,122,82,.14);color:var(--accent-2);padding:3px 9px;border-radius:6px;font-weight:700;}
+
+  .opts{display:flex;flex-direction:column;gap:6px;margin-bottom:10px;}
+  .opt{
+    display:flex;gap:8px;align-items:flex-start;padding:8px 10px;border-radius:8px;
+    background:var(--panel-3);border:1px solid transparent;font-size:13px;
+  }
+  .opt.correct{border-color:var(--accent);background:rgba(49,224,165,.1);color:var(--accent);font-weight:700;}
+  .opt .letter{font-weight:800;flex-shrink:0;}
+
+  .answer-box{
+    background:rgba(49,224,165,.08);border:1px solid rgba(49,224,165,.3);
+    border-radius:8px;padding:10px 12px;font-size:13px;margin-top:8px;
+  }
+  .answer-box b{color:var(--accent);}
+  .explain{color:var(--muted);font-size:12.5px;margin-top:8px;line-height:1.5;}
+
+  .empty{color:var(--muted);font-size:12.5px;text-align:center;padding:26px 0;}
+  .toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%);
+    background:var(--accent);color:#04160f;padding:12px 20px;border-radius:10px;
+    font-weight:700;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.4);
+    z-index:99;opacity:0;transition:.3s;pointer-events:none;
+  }
+  .toast.show{opacity:1;top:26px;}
+  .toast.error{background:var(--danger);color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>✨ Generator Soal Latihan — AI</h1>
+    <p>Buat soal latihan otomatis dari topik apa pun menggunakan Generative AI (Claude)</p>
+  </header>
+
+  <div class="card">
+    <h2>Pengaturan Soal</h2>
+    <div class="form-grid">
+      <div class="field full">
+        <label>Topik / Materi</label>
+        <input type="text" id="topic" placeholder="Contoh: Fotosintesis, Persamaan Kuadrat, Sejarah Kemerdekaan Indonesia..." />
+      </div>
+
+      <div class="field">
+        <label>Jumlah Soal</label>
+        <input type="number" id="jumlah" value="5" min="1" max="15" />
+      </div>
+
+      <div class="field">
+        <label>Tingkat Kesulitan</label>
+        <div class="chip-select" id="difficultySelect">
+          <div class="chip-opt active" data-val="Mudah">Mudah</div>
+          <div class="chip-opt" data-val="Sedang">Sedang</div>
+          <div class="chip-opt" data-val="Sulit">Sulit</div>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>Jenis Soal</label>
+        <div class="chip-select" id="typeSelect">
+          <div class="chip-opt active" data-val="pilihan ganda">Pilihan Ganda</div>
+          <div class="chip-opt" data-val="esai">Esai / Uraian</div>
+          <div class="chip-opt" data-val="campuran">Campuran</div>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>Catatan Tambahan (opsional)</label>
+        <textarea id="notes" placeholder="Contoh: fokus pada konsep dasar, gunakan konteks kehidupan sehari-hari, untuk siswa SMP kelas 8..."></textarea>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <button class="btn-primary" id="btnGenerate" onclick="generateQuestions()">🚀 Generate Soal</button>
+      <button class="btn-secondary" onclick="exportText()">⬇ Export Teks</button>
+      <button class="btn-secondary" onclick="toggleAnswers()">👁 Tampilkan/Sembunyikan Jawaban</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Hasil Soal Latihan</h2>
+    <div id="loadingBox" class="loading" style="display:none;">
+      <div class="spinner"></div>
+      <span>AI sedang menyusun soal, mohon tunggu sebentar...</span>
+    </div>
+    <div id="questionResult">
+      <div class="empty">Belum ada soal. Isi topik lalu klik "Generate Soal".</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let selectedDifficulty = 'Mudah';
+let selectedType = 'pilihan ganda';
+let currentQuestions = [];
+let answersVisible = true;
+
+document.querySelectorAll('#difficultySelect .chip-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#difficultySelect .chip-opt').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    selectedDifficulty = el.dataset.val;
+  });
+});
+document.querySelectorAll('#typeSelect .chip-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('#typeSelect .chip-opt').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    selectedType = el.dataset.val;
+  });
+});
+
+function showToast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', !!isError);
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2600);
+}
+
+async function generateQuestions(){
+  const topic = document.getElementById('topic').value.trim();
+  const jumlah = Math.min(Math.max(Number(document.getElementById('jumlah').value)||5, 1), 15);
+  const notes = document.getElementById('notes').value.trim();
+
+  if(!topic){ showToast('Isi topik/materi terlebih dahulu', true); return; }
+
+  const btn = document.getElementById('btnGenerate');
+  btn.disabled = true;
+  document.getElementById('loadingBox').style.display = 'flex';
+  document.getElementById('questionResult').innerHTML = '';
+
+  const prompt = `Buatkan ${jumlah} soal latihan tentang topik "${topic}".
+Tingkat kesulitan: ${selectedDifficulty}.
+Jenis soal: ${selectedType}.
+${notes ? 'Catatan tambahan: ' + notes : ''}
+
+Balas HANYA dengan JSON valid tanpa teks lain, tanpa markdown code fence, dengan format persis seperti ini:
+{
+  "questions": [
+    {
+      "type": "pilihan_ganda",
+      "question": "teks soal",
+      "options": {"A": "opsi A", "B": "opsi B", "C": "opsi C", "D": "opsi D"},
+      "correctAnswer": "A",
+      "explanation": "penjelasan singkat kenapa jawaban ini benar"
+    },
+    {
+      "type": "esai",
+      "question": "teks soal esai",
+      "correctAnswer": "kunci jawaban / poin-poin penting yang harus ada",
+      "explanation": "penjelasan singkat"
+    }
+  ]
+}
+
+Jika jenis soal "pilihan ganda", semua item type harus "pilihan_ganda". Jika "esai", semua item type harus "esai". Jika "campuran", boleh kombinasi keduanya. Gunakan Bahasa Indonesia yang jelas dan sesuai tingkat kesulitan yang diminta.`;
+
+  try{
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 1000,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const data = await response.json();
+    const textBlocks = (data.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n');
+    const cleaned = textBlocks.replace(/```json/g, '').replace(/```/g, '').trim();
+
+    let parsed;
+    try{
+      parsed = JSON.parse(cleaned);
+    }catch(e){
+      throw new Error('Gagal membaca respons AI. Coba generate ulang.');
+    }
+
+    currentQuestions = parsed.questions || [];
+    if(currentQuestions.length === 0) throw new Error('AI tidak mengembalikan soal. Coba lagi.');
+
+    renderQuestions();
+    showToast('✅ ' + currentQuestions.length + ' soal berhasil dibuat');
+  }catch(err){
+    document.getElementById('questionResult').innerHTML = '<div class="empty">Terjadi kesalahan saat membuat soal. Coba lagi.</div>';
+    showToast(err.message || 'Terjadi kesalahan', true);
+  }finally{
+    btn.disabled = false;
+    document.getElementById('loadingBox').style.display = 'none';
+  }
+}
+
+function renderQuestions(){
+  const el = document.getElementById('questionResult');
+  if(currentQuestions.length === 0){
+    el.innerHTML = '<div class="empty">Belum ada soal. Isi topik lalu klik "Generate Soal".</div>';
+    return;
+  }
+
+  el.innerHTML = currentQuestions.map((q, i) => {
+    const isPG = q.type === 'pilihan_ganda' && q.options;
+    let optsHtml = '';
+    if(isPG){
+      optsHtml = '<div class="opts">' + Object.entries(q.options).map(([letter, text]) => `
+        <div class="opt ${answersVisible && letter === q.correctAnswer ? 'correct' : ''}">
+          <span class="letter">${letter}.</span><span>${text}</span>
+        </div>
+      `).join('') + '</div>';
+    }
+
+    return `
+    <div class="qcard">
+      <div class="qhead">
+        <span class="qnum">Soal ${i+1}</span>
+        <span class="badge">${isPG ? 'Pilihan Ganda' : 'Esai'}</span>
+      </div>
+      <div class="qtext">${q.question}</div>
+      ${optsHtml}
+      ${answersVisible ? `
+        <div class="answer-box"><b>Jawaban:</b> ${isPG ? q.correctAnswer : q.correctAnswer}</div>
+        ${q.explanation ? `<div class="explain">💡 ${q.explanation}</div>` : ''}
+      ` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleAnswers(){
+  answersVisible = !answersVisible;
+  renderQuestions();
+  showToast(answersVisible ? 'Jawaban ditampilkan' : 'Jawaban disembunyikan');
+}
+
+function exportText(){
+  if(currentQuestions.length === 0){ showToast('Belum ada soal untuk diekspor', true); return; }
+  const topic = document.getElementById('topic').value.trim();
+  let out = `SOAL LATIHAN — ${topic}\nTingkat: ${selectedDifficulty} | Jenis: ${selectedType}\n\n`;
+
+  currentQuestions.forEach((q, i) => {
+    out += `${i+1}. ${q.question}\n`;
+    if(q.type === 'pilihan_ganda' && q.options){
+      Object.entries(q.options).forEach(([letter, text]) => { out += `   ${letter}. ${text}\n`; });
+    }
+    out += `   Jawaban: ${q.correctAnswer}\n`;
+    if(q.explanation) out += `   Pembahasan: ${q.explanation}\n`;
+    out += `\n`;
+  });
+
+  const blob = new Blob([out], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'soal_latihan_' + (topic || 'ai').replace(/\s+/g,'_').toLowerCase() + '.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
