@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaceMatch — Face Recognition Sederhana</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    :root {
+      --paper: #0F1115;
+      --panel: #171A21;
+      --ink: #EDEFF4;
+      --ink-soft: #9AA3B2;
+      --acid: #C6FF3D;
+      --rose: #FF5D7E;
+      --navy: #3553B0;
+      --rule: #2A2E38;
+      --radius: 14px;
+      --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Work Sans', sans-serif;
+      background:
+        radial-gradient(circle at 15% 0%, rgba(198, 255, 61, 0.07), transparent 40%),
+        radial-gradient(circle at 85% 100%, rgba(53, 83, 176, 0.12), transparent 45%),
+        var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: 'Fraunces', serif;
+      font-weight: 700;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* navbar */
+    .navbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--rule);
+      position: sticky;
+      top: 0;
+      background: rgba(15, 17, 21, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--acid);
+      color: #0F1115;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-family: 'Fraunces', serif;
+      transform: rotate(-4deg);
+    }
+
+    .brand-text {
+      font-size: 18px;
+    }
+
+    .brand-text span {
+      color: var(--acid);
+    }
+
+    .status-pill {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--rule);
+      color: var(--ink-soft);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ink-soft);
+    }
+
+    .status-dot.ready {
+      background: var(--acid);
+      box-shadow: 0 0 8px var(--acid);
+    }
+
+    .status-dot.busy {
+      background: #F2A93B;
+    }
+
+    .status-dot.err {
+      background: var(--rose);
+    }
+
+    /* layout */
+    .wrap {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .hero-text {
+      max-width: 680px;
+      margin-bottom: 32px;
+    }
+
+    .eyebrow {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: .08em;
+      color: var(--acid);
+      background: rgba(198, 255, 61, 0.1);
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .hero-text h1 {
+      font-size: 34px;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .hero-text p {
+      color: var(--ink-soft);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--rule);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .panel h3 {
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+
+    .panel .sub {
+      font-size: 13px;
+      color: var(--ink-soft);
+      margin-bottom: 16px;
+    }
+
+    /* camera stage */
+    .stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--rule);
+    }
+
+    .stage video,
+    .stage canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .stage canvas {
+      pointer-events: none;
+    }
+
+    .scan-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--acid), transparent);
+      top: 0;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scan-line.active {
+      animation: scan 1.8s linear infinite;
+      opacity: 1;
+    }
+
+    @keyframes scan {
+      0% {
+        top: 0%;
+      }
+
+      100% {
+        top: 100%;
+      }
+    }
+
+    .stage-overlay-msg {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      color: var(--ink-soft);
+      font-size: 13px;
+      padding: 20px;
+      background: rgba(15, 17, 21, 0.6);
+      z-index: 5;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      font-family: 'Work Sans';
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      border-radius: 999px;
+      padding: 11px 20px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: .2s;
+    }
+
+    .btn-primary {
+      background: var(--acid);
+      color: #0F1115;
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.08);
+      transform: translateY(-1px);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink);
+      border: 1.5px solid var(--rule);
+    }
+
+    .btn-ghost:hover {
+      border-color: var(--ink-soft);
+    }
+
+    .btn-danger {
+      background: transparent;
+      color: var(--rose);
+      border: 1.5px solid rgba(255, 93, 126, .4);
+    }
+
+    .btn-danger:hover {
+      background: rgba(255, 93, 126, .08);
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .field input[type=text] {
+      font-family: 'Work Sans';
+      font-size: 14px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      background: #0F1115;
+      border: 1.5px solid var(--rule);
+      color: var(--ink);
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--acid);
+    }
+
+    /* recognition readout */
+    .readout {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 10px;
+      background: #0F1115;
+      border: 1px solid var(--rule);
+      min-height: 84px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .readout .name {
+      font-family: 'Fraunces', serif;
+      font-size: 20px;
+    }
+
+    .readout .name.unknown {
+      color: var(--ink-soft);
+    }
+
+    .readout .name.known {
+      color: var(--acid);
+    }
+
+    .readout .meta {
+      font-size: 12.5px;
+      color: var(--ink-soft);
+    }
+
+    .conf-bar-track {
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: var(--rule);
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .conf-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--navy), var(--acid));
+    }
+
+    /* registered list */
+    .face-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .face-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #0F1115;
+      border: 1px solid var(--rule);
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .face-item img {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .face-item .name {
+      font-size: 14px;
+      font-weight: 600;
+      flex: 1;
+    }
+
+    .face-item .meta {
+      font-size: 11px;
+      color: var(--ink-soft);
+    }
+
+    .face-item .del {
+      background: none;
+      border: none;
+      color: var(--rose);
+      cursor: pointer;
+      font-size: 15px;
+    }
+
+    .empty-state {
+      font-size: 13px;
+      color: var(--ink-soft);
+      padding: 18px 4px;
+      text-align: center;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--ink);
+      color: #0F1115;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: .25s;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: var(--ink-soft);
+      border-top: 1px solid var(--rule);
+    }
+
+    @media (max-width:880px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .navbar {
+        padding: 14px 18px;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar">
+    <div class="brand">
+      <div class="brand-mark">F</div>
+      <div class="brand-text">Face<span>Match</span></div>
+    </div>
+    <div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="statusText">Memuat model…</span>
+    </div>
+  </nav>
+
+  <div class="wrap">
+    <div class="hero-text">
+      <span class="eyebrow">FACE RECOGNITION · BROWSER ONLY</span>
+      <h1>Kenali wajah langsung dari kamera, tanpa server.</h1>
+      <p>Daftarkan wajah lewat kamera, lalu sistem akan mengenali wajah tersebut secara real-time menggunakan deteksi &
+        pencocokan fitur wajah di browser. Semua data wajah tersimpan lokal di perangkat kamu (LocalStorage) — tidak ada
+        yang diunggah ke server manapun.</p>
+    </div>
+
+    <div class="grid">
+      <!-- KAMERA -->
+      <div class="panel">
+        <h3>📷 Kamera Langsung</h3>
+        <div class="sub">Posisikan wajah di tengah frame untuk hasil terbaik.</div>
+
+        <div class="stage" id="stage">
+          <video id="video" autoplay muted playsinline></video>
+          <canvas id="overlay"></canvas>
+          <div class="scan-line" id="scanLine"></div>
+          <div class="stage-overlay-msg" id="stageMsg">Menyiapkan model deteksi wajah…</div>
+        </div>
+
+        <div class="controls">
+          <button class="btn btn-primary" id="btnStartCam" disabled>▶ Nyalakan Kamera</button>
+          <button class="btn btn-ghost" id="btnStopCam" disabled>⏸ Hentikan</button>
+          <button class="btn btn-ghost" id="btnToggleRecognize" disabled>🔎 Mulai Pengenalan</button>
+        </div>
+
+        <div class="readout" id="readout">
+          <div class="name unknown" id="readoutName">Belum ada wajah terdeteksi</div>
+          <div class="meta" id="readoutMeta">Nyalakan kamera dan mulai pengenalan untuk melihat hasil.</div>
+          <div class="conf-bar-track">
+            <div class="conf-bar-fill" id="confBar" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DAFTAR WAJAH -->
+      <div>
+        <div class="panel" style="margin-bottom:20px;">
+          <h3>➕ Daftarkan Wajah Baru</h3>
+          <div class="sub">Pastikan wajah terlihat jelas di kamera sebelum menyimpan.</div>
+          <div class="field">
+            <label>Nama</label>
+            <input type="text" id="newName" placeholder="cth. Mutia Alma">
+          </div>
+          <div class="controls">
+            <button class="btn btn-primary" id="btnRegister" disabled>📸 Ambil & Simpan Wajah</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>🗂 Wajah Terdaftar</h3>
+          <div class="sub" id="countLabel">0 wajah tersimpan secara lokal.</div>
+          <div class="face-list" id="faceList">
+            <div class="empty-state">Belum ada wajah terdaftar.</div>
+          </div>
+          <div class="controls">
+            <button class="btn btn-danger" id="btnClearAll">🗑 Hapus Semua Data</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">FaceMatch · Deteksi & pengenalan wajah berjalan 100% di browser memakai face-api.js · Data wajah
+    tersimpan lokal (LocalStorage), tidak dikirim ke server manapun</div>
+  <div class="toast" id="toast"></div>
+
+  <!-- face-api.js: library deteksi & pengenalan wajah berbasis TensorFlow.js -->
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+  <script>
+    /* ============================================================
+       FACEMATCH — Face Recognition sederhana berbasis kamera
+       Stack: HTML + face-api.js (CDN) — semua proses di browser
+       Data wajah (descriptor) disimpan di localStorage, BUKAN gambar.
+       ============================================================ */
+
+    const MODEL_URL = "https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model";
+    const STORAGE_KEY = "facematch_registered_faces_v1";
+    const MATCH_THRESHOLD = 0.5; // semakin kecil = semakin ketat pencocokannya
+
+    let video, overlay, ctx;
+    let modelsReady = false;
+    let camRunning = false;
+    let recognizing = false;
+    let recognizeLoopId = null;
+    let registeredFaces = [];   // [{name, descriptor:[...], thumbnail, ts}]
+
+    /* ---------------- Util UI ---------------- */
+    function setStatus(text, kind) {
+      document.getElementById("statusText").textContent = text;
+      const dot = document.getElementById("statusDot");
+      dot.className = "status-dot" + (kind ? " " + kind : "");
+    }
+    let toastTimer;
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+    }
+    function setStageMsg(msg) {
+      const el = document.getElementById("stageMsg");
+      if (msg) { el.style.display = "flex"; el.textContent = msg; }
+      else { el.style.display = "none"; }
+    }
+
+    /* ---------------- Storage ---------------- */
+    function loadFaces() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        registeredFaces = raw ? JSON.parse(raw) : [];
+      } catch (e) { registeredFaces = []; }
+    }
+    function saveFaces() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(registeredFaces));
+    }
+
+    /* ---------------- Load model ---------------- */
+    async function loadModels() {
+      setStatus("Memuat model AI…", "busy");
+      setStageMsg("Mengunduh model deteksi wajah (sekali saja, lalu cache)…");
+      try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+        await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+        modelsReady = true;
+        setStatus("Model siap", "ready");
+        setStageMsg("Tekan \"Nyalakan Kamera\" untuk mulai.");
+        document.getElementById("btnStartCam").disabled = false;
+      } catch (err) {
+        console.error(err);
+        setStatus("Gagal memuat model", "err");
+        setStageMsg("Gagal memuat model AI. Periksa koneksi internet lalu muat ulang halaman.");
+      }
+    }
+
+    /* ---------------- Kamera ---------------- */
+    async function startCamera() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 }, audio: false });
+        video.srcObject = stream;
+        await video.play();
+        resizeOverlay();
+        camRunning = true;
+        setStageMsg(null);
+        document.getElementById("btnStartCam").disabled = true;
+        document.getElementById("btnStopCam").disabled = false;
+        document.getElementById("btnToggleRecognize").disabled = false;
+        document.getElementById("btnRegister").disabled = false;
+      } catch (err) {
+        console.error(err);
+        showToast("Tidak bisa mengakses kamera. Cek izin kamera di browser.");
+        setStageMsg("Akses kamera ditolak / tidak tersedia. Izinkan kamera lalu coba lagi.");
+      }
+    }
+    function stopCamera() {
+      const stream = video.srcObject;
+      if (stream) { stream.getTracks().forEach(t => t.stop()); }
+      video.srcObject = null;
+      camRunning = false;
+      stopRecognizing();
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+      setStageMsg("Kamera dimatikan. Tekan \"Nyalakan Kamera\" untuk mulai lagi.");
+      document.getElementById("btnStartCam").disabled = false;
+      document.getElementById("btnStopCam").disabled = true;
+      document.getElementById("btnToggleRecognize").disabled = true;
+      document.getElementById("btnRegister").disabled = true;
+    }
+    function resizeOverlay() {
+      overlay.width = video.clientWidth;
+      overlay.height = video.clientHeight;
+    }
+
+    /* ---------------- Deteksi 1 wajah (dipakai utk register & recognize) ---------------- */
+    async function detectSingleFace() {
+      const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+      return faceapi.detectSingleFace(video, options)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
+    }
+
+    /* ---------------- Registrasi wajah baru ---------------- */
+    async function registerFace() {
+      const name = document.getElementById("newName").value.trim();
+      if (!name) { showToast("Isi nama terlebih dahulu."); return; }
+      if (!camRunning) { showToast("Nyalakan kamera terlebih dahulu."); return; }
+
+      setStatus("Memindai wajah…", "busy");
+      document.getElementById("btnRegister").disabled = true;
+
+      const result = await detectSingleFace();
+
+      if (!result) {
+        showToast("Wajah tidak terdeteksi. Pastikan wajah terlihat jelas.");
+        setStatus("Model siap", "ready");
+        document.getElementById("btnRegister").disabled = false;
+        return;
+      }
+
+      const thumbnail = grabThumbnail(result.detection.box);
+
+      registeredFaces.push({
+        name,
+        descriptor: Array.from(result.descriptor),
+        thumbnail,
+        ts: Date.now()
+      });
+      saveFaces();
+      renderFaceList();
+      document.getElementById("newName").value = "";
+      showToast(`Wajah "${name}" berhasil disimpan.`);
+      setStatus("Model siap", "ready");
+      document.getElementById("btnRegister").disabled = false;
+    }
+
+    function grabThumbnail(box) {
+      const tmp = document.createElement("canvas");
+      const size = 120;
+      tmp.width = size; tmp.height = size;
+      const tctx = tmp.getContext("2d");
+      const pad = box.width * 0.25;
+      tctx.drawImage(
+        video,
+        Math.max(0, box.x - pad), Math.max(0, box.y - pad),
+        box.width + pad * 2, box.height + pad * 2,
+        0, 0, size, size
+      );
+      return tmp.toDataURL("image/jpeg", 0.7);
+    }
+
+    /* ---------------- Render daftar wajah terdaftar ---------------- */
+    function renderFaceList() {
+      const list = document.getElementById("faceList");
+      document.getElementById("countLabel").textContent = `${registeredFaces.length} wajah tersimpan secara lokal.`;
+
+      if (registeredFaces.length === 0) {
+        list.innerHTML = `<div class="empty-state">Belum ada wajah terdaftar.</div>`;
+        return;
+      }
+      list.innerHTML = registeredFaces.map((f, idx) => `
+    <div class="face-item">
+      <img src="${f.thumbnail}" alt="${f.name}">
+      <div style="flex:1;">
+        <div class="name">${f.name}</div>
+        <div class="meta">${new Date(f.ts).toLocaleString("id-ID")}</div>
+      </div>
+      <button class="del" onclick="deleteFace(${idx})" title="Hapus">✕</button>
+    </div>
+  `).join("");
+    }
+    function deleteFace(idx) {
+      const removed = registeredFaces[idx];
+      registeredFaces.splice(idx, 1);
+      saveFaces();
+      renderFaceList();
+      showToast(`Wajah "${removed.name}" dihapus.`);
+    }
+    function clearAllFaces() {
+      if (registeredFaces.length === 0) { showToast("Tidak ada data untuk dihapus."); return; }
+      if (!confirm("Hapus semua wajah terdaftar? Tindakan ini tidak bisa dibatalkan.")) return;
+      registeredFaces = [];
+      saveFaces();
+      renderFaceList();
+      showToast("Semua data wajah dihapus.");
+    }
+
+    /* ---------------- Pengenalan wajah real-time ---------------- */
+    function euclideanDistance(a, b) {
+      let sum = 0;
+      for (let i = 0; i < a.length; i++) { const d = a[i] - b[i]; sum += d * d; }
+      return Math.sqrt(sum);
+    }
+
+    function findBestMatch(descriptor) {
+      if (registeredFaces.length === 0) return null;
+      let best = null;
+      for (const f of registeredFaces) {
+        const dist = euclideanDistance(descriptor, f.descriptor);
+        if (!best || dist < best.distance) { best = { name: f.name, distance: dist }; }
+      }
+      return best;
+    }
+
+    async function recognizeLoop() {
+      if (!recognizing) return;
+
+      const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+      const detections = await faceapi.detectAllFaces(video, options)
+        .withFaceLandmarks()
+        .withFaceDescriptors();
+
+      resizeOverlay();
+      ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+      if (detections.length === 0) {
+        updateReadout(null, null);
+      } else {
+        const resized = faceapi.resizeResults(detections, { width: overlay.width, height: overlay.height });
+
+        let topResult = null;
+        resized.forEach((det, i) => {
+          const original = detections[i];
+          const match = findBestMatch(Array.from(original.descriptor));
+          const isKnown = match && match.distance < MATCH_THRESHOLD;
+          const label = isKnown ? `${match.name} (${(100 * (1 - match.distance / MATCH_THRESHOLD)).toFixed(0)}%)` : "Tidak dikenal";
+
+          drawBox(det.detection.box, label, isKnown);
+
+          if (i === 0) topResult = { isKnown, match };
+        });
+
+        updateReadout(topResult.match, topResult.isKnown);
+      }
+
+      recognizeLoopId = requestAnimationFrame(recognizeLoop);
+    }
+
+    function drawBox(box, label, isKnown) {
+      const color = isKnown ? "#C6FF3D" : "#FF5D7E";
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(box.x, box.y, box.width, box.height);
+
+      ctx.font = "600 13px 'Work Sans', sans-serif";
+      const textW = ctx.measureText(label).width;
+      ctx.fillStyle = color;
+      ctx.fillRect(box.x, box.y - 22, textW + 16, 22);
+      ctx.fillStyle = "#0F1115";
+      ctx.fillText(label, box.x + 8, box.y - 6);
+    }
+
+    function updateReadout(match, isKnown) {
+      const nameEl = document.getElementById("readoutName");
+      const metaEl = document.getElementById("readoutMeta");
+      const bar = document.getElementById("confBar");
+
+      if (!match) {
+        nameEl.textContent = "Tidak ada wajah terdeteksi";
+        nameEl.className = "name unknown";
+        metaEl.textContent = "Posisikan wajah di tengah kamera.";
+        bar.style.width = "0%";
+        return;
+      }
+      if (isKnown) {
+        const pct = Math.max(0, Math.min(100, 100 * (1 - match.distance / MATCH_THRESHOLD)));
+        nameEl.textContent = `✅ ${match.name}`;
+        nameEl.className = "name known";
+        metaEl.textContent = `Jarak fitur wajah: ${match.distance.toFixed(3)} (ambang batas ${MATCH_THRESHOLD})`;
+        bar.style.width = pct.toFixed(0) + "%";
+      } else {
+        nameEl.textContent = "❓ Wajah tidak dikenal";
+        nameEl.className = "name unknown";
+        metaEl.textContent = `Tidak cocok dengan data terdaftar (jarak terdekat: ${match.distance.toFixed(3)})`;
+        bar.style.width = "8%";
+      }
+    }
+
+    function startRecognizing() {
+      if (registeredFaces.length === 0) {
+        showToast("Belum ada wajah terdaftar — sistem tetap akan mendeteksi tapi menampilkan \"tidak dikenal\".");
+      }
+      recognizing = true;
+      document.getElementById("scanLine").classList.add("active");
+      document.getElementById("btnToggleRecognize").textContent = "⏹ Hentikan Pengenalan";
+      recognizeLoop();
+    }
+    function stopRecognizing() {
+      recognizing = false;
+      if (recognizeLoopId) cancelAnimationFrame(recognizeLoopId);
+      document.getElementById("scanLine").classList.remove("active");
+      document.getElementById("btnToggleRecognize").textContent = "🔎 Mulai Pengenalan";
+      ctx && ctx.clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    /* ---------------- Init ---------------- */
+    window.addEventListener("DOMContentLoaded", () => {
+      video = document.getElementById("video");
+      overlay = document.getElementById("overlay");
+      ctx = overlay.getContext("2d");
+
+      loadFaces();
+      renderFaceList();
+      loadModels();
+
+      document.getElementById("btnStartCam").addEventListener("click", startCamera);
+      document.getElementById("btnStopCam").addEventListener("click", stopCamera);
+      document.getElementById("btnRegister").addEventListener("click", registerFace);
+      document.getElementById("btnClearAll").addEventListener("click", clearAllFaces);
+      document.getElementById("btnToggleRecognize").addEventListener("click", () => {
+        if (recognizing) stopRecognizing(); else startRecognizing();
+      });
+      window.addEventListener("resize", resizeOverlay);
+    });
+  </script>
+</body>
+
+</html>
