@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asisten Penjadwalan Ujian/Pelajaran Sederhana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F4FC;
+    --panel:#FFFFFF;
+    --line:#E7E4F5;
+    --line-soft:#F0EEFA;
+    --ink:#211B36;
+    --ink-soft:#6B6584;
+    --ink-faint:#A29DBE;
+    --indigo:#5B4FE8;
+    --indigo-dark:#4238C4;
+    --indigo-bg:#EEEBFC;
+    --coral:#EF5A6F;
+    --coral-bg:#FDE6E9;
+    --amber:#E0A22A;
+    --amber-bg:#FBF1DA;
+    --green:#2FA35E;
+    --green-bg:#E3F6EA;
+    --radius:14px;
+    --shadow:0 8px 22px rgba(33,27,54,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 22px 70px;
+  }
+  .wrap{max-width:1260px; margin:0 auto;}
+
+  header.top{margin-bottom:22px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--indigo-dark);
+    font-weight:600;
+    margin-bottom:8px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:clamp(24px,3.2vw,32px);
+    margin:0 0 8px;
+    letter-spacing:-.01em;
+  }
+  .sub{color:var(--ink-soft); font-size:14px; max-width:600px; line-height:1.55;}
+
+  /* ---------- tabs ---------- */
+  .tabs{
+    display:flex;
+    gap:6px;
+    margin:20px 0 22px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:5px;
+    width:fit-content;
+    box-shadow:var(--shadow);
+  }
+  .tab-btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    background:transparent;
+    border:none;
+    padding:9px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    color:var(--ink-soft);
+  }
+  .tab-btn.active{background:var(--indigo); color:#fff;}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .grid{display:grid; grid-template-columns:320px 1fr; gap:22px; align-items:start;}
+  @media (max-width:960px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+  }
+  .panel + .panel{margin-top:20px;}
+  .panel-title{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15.5px; margin:0 0 4px;}
+  .panel-desc{font-size:12.5px; color:var(--ink-soft); margin:0 0 16px; line-height:1.5;}
+
+  /* ---------- form ---------- */
+  .field{margin-bottom:14px;}
+  .field label{
+    display:block;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .field input, .field select{
+    width:100%;
+    background:#FBFBFE;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:9px 11px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  .field input:focus, .field select:focus{border-color:var(--indigo);}
+  .field-row{display:flex; gap:10px;}
+  .field-row .field{flex:1;}
+
+  .btn{
+    font-family:'Inter',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    border:none;
+    border-radius:9px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:transform .1s ease, filter .15s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--indigo); color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .btn-ghost{background:transparent; color:var(--ink); border:1.5px solid var(--line);}
+  .btn-ghost:hover{border-color:var(--indigo); color:var(--indigo-dark);}
+  .btn-full{width:100%;}
+  .btn-row{display:flex; gap:10px; margin-top:8px;}
+  .btn-row .btn{flex:1;}
+  .btn-small{padding:6px 11px; font-size:12px; border-radius:7px;}
+
+  /* ---------- conflict panel ---------- */
+  .conflict-item{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:var(--coral-bg);
+    border:1px solid rgba(239,90,111,0.28);
+    border-radius:10px;
+    padding:10px 14px;
+    margin-bottom:8px;
+    font-size:13px;
+    line-height:1.5;
+  }
+  .conflict-item:last-child{margin-bottom:0;}
+  .conflict-item b{font-weight:700;}
+  .conflict-icon{flex-shrink:0; color:var(--coral); font-weight:700;}
+
+  /* ---------- timetable ---------- */
+  .timetable-scroll{overflow-x:auto;}
+  .timetable{
+    display:grid;
+    grid-template-columns:64px repeat(6, minmax(140px,1fr));
+    min-width:920px;
+  }
+  .tt-head{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    text-align:center;
+    padding:10px 4px;
+    border-bottom:2px solid var(--line);
+    position:sticky;
+    top:0;
+    background:var(--panel);
+  }
+  .tt-corner{border-bottom:2px solid var(--line);}
+  .tt-axis{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+  }
+  .tt-axis-label{
+    position:absolute;
+    right:8px;
+    transform:translateY(-50%);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px;
+    color:var(--ink-faint);
+  }
+  .tt-day-col{
+    position:relative;
+    border-right:1px solid var(--line-soft);
+    background-image:repeating-linear-gradient(180deg, var(--line-soft) 0, var(--line-soft) 1px, transparent 1px, transparent 60px);
+  }
+  .tt-day-col:last-child{border-right:none;}
+  .tt-block{
+    position:absolute;
+    left:3px; right:3px;
+    border-radius:8px;
+    padding:6px 8px;
+    font-size:11.5px;
+    line-height:1.35;
+    color:#fff;
+    overflow:hidden;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+    cursor:default;
+  }
+  .tt-block.conflict{
+    outline:2px solid var(--coral);
+    outline-offset:-2px;
+  }
+  .tt-block-title{font-weight:700; font-family:'Space Grotesk',sans-serif; font-size:12px;}
+  .tt-block-meta{opacity:.9; font-size:10.5px; margin-top:2px;}
+
+  /* ---------- list ---------- */
+  .entry-list{list-style:none; margin:0; padding:0;}
+  .entry-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 4px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .entry-item:last-child{border-bottom:none;}
+  .entry-color{width:8px; height:34px; border-radius:4px; flex-shrink:0;}
+  .entry-main{flex:1; min-width:0;}
+  .entry-title{font-weight:600; font-size:13.5px;}
+  .entry-meta{font-size:11.5px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; margin-top:2px;}
+  .entry-badge{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    padding:3px 9px;
+    border-radius:20px;
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .entry-badge.ok{background:var(--green-bg); color:var(--green);}
+  .entry-badge.conflict{background:var(--coral-bg); color:var(--coral);}
+  .entry-badge.soon{background:var(--amber-bg); color:var(--amber);}
+  .entry-badge.today{background:var(--indigo-bg); color:var(--indigo-dark);}
+  .entry-del{
+    background:transparent;
+    border:1.5px solid var(--line);
+    color:var(--ink-soft);
+    border-radius:7px;
+    width:28px; height:28px;
+    cursor:pointer;
+    font-size:14px;
+    flex-shrink:0;
+  }
+  .entry-del:hover{border-color:var(--coral); color:var(--coral);}
+
+  /* ---------- upcoming cards ---------- */
+  .upcoming-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(200px,1fr));
+    gap:12px;
+    margin-bottom:20px;
+  }
+  .upcoming-card{
+    border-radius:12px;
+    padding:14px 16px;
+    color:#fff;
+    box-shadow:var(--shadow);
+  }
+  .upcoming-days{font-family:'IBM Plex Mono',monospace; font-size:11px; opacity:.9; margin-bottom:6px;}
+  .upcoming-title{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px; margin-bottom:4px;}
+  .upcoming-meta{font-size:11.5px; opacity:.92;}
+
+  .filter-row{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;}
+  .filter-row select, .filter-row input{
+    background:#FBFBFE;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    padding:8px 12px;
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    font-size:13px;
+    outline:none;
+  }
+  .filter-row input{flex:1; min-width:160px;}
+  .filter-row select:focus, .filter-row input:focus{border-color:var(--indigo);}
+
+  .empty-state{text-align:center; padding:44px 20px; color:var(--ink-soft);}
+  .empty-state .glyph{font-size:28px; margin-bottom:8px; color:var(--ink-faint);}
+  .empty-state p{font-size:13.5px; max-width:340px; margin:6px auto 0; line-height:1.6;}
+
+  footer.hint{text-align:center; font-size:12px; color:var(--ink-faint); margin-top:28px;}
+
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="eyebrow">Perencana Akademik</div>
+    <h1>Asisten Penjadwalan Ujian/Pelajaran Sederhana</h1>
+    <p class="sub">Susun jadwal pelajaran mingguan dan jadwal ujian, lengkap dengan deteksi bentrok ruangan atau kelas secara otomatis.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="pelajaran">Jadwal Pelajaran</button>
+    <button class="tab-btn" data-tab="ujian">Jadwal Ujian</button>
+  </div>
+
+  <!-- ================= TAB: PELAJARAN ================= -->
+  <div class="tab-panel active" id="tab-pelajaran">
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h2 class="panel-title">Tambah Jadwal Pelajaran</h2>
+          <p class="panel-desc">Jadwal ini berulang setiap minggu pada hari yang sama.</p>
+
+          <div class="field">
+            <label for="pSubject">Mata pelajaran</label>
+            <input type="text" id="pSubject" placeholder="Contoh: Matematika">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="pClass">Kelas</label>
+              <input type="text" id="pClass" placeholder="Contoh: X IPA 2">
+            </div>
+            <div class="field">
+              <label for="pTeacher">Guru</label>
+              <input type="text" id="pTeacher" placeholder="Nama guru">
+            </div>
+          </div>
+          <div class="field">
+            <label for="pDay">Hari</label>
+            <select id="pDay">
+              <option>Senin</option><option>Selasa</option><option>Rabu</option>
+              <option>Kamis</option><option>Jumat</option><option>Sabtu</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="pStart">Jam mulai</label>
+              <input type="time" id="pStart" value="07:00">
+            </div>
+            <div class="field">
+              <label for="pEnd">Jam selesai</label>
+              <input type="time" id="pEnd" value="08:00">
+            </div>
+          </div>
+          <div class="field">
+            <label for="pRoom">Ruangan</label>
+            <input type="text" id="pRoom" placeholder="Contoh: Ruang 12">
+          </div>
+
+          <button class="btn btn-primary btn-full" id="btnAddPelajaran">Tambahkan ke Jadwal</button>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Data</h2>
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="btnSamplePelajaran">Contoh Data</button>
+            <button class="btn btn-ghost" id="btnClearPelajaran">Hapus Semua</button>
+          </div>
+          <button class="btn btn-ghost btn-full" id="btnExportPelajaran" style="margin-top:10px;">Unduh .csv</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" id="conflictPanelPelajaran" style="display:none;">
+          <h2 class="panel-title">⚠ Bentrok Terdeteksi</h2>
+          <p class="panel-desc">Jadwal berikut memiliki ruangan atau kelas yang sama pada waktu yang tumpang tindih.</p>
+          <div id="conflictListPelajaran"></div>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Timetable Mingguan</h2>
+          <p class="panel-desc">Senin – Sabtu, pukul 06.00 – 18.00.</p>
+          <div class="timetable-scroll">
+            <div class="timetable" id="timetableGrid"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Daftar Jadwal Pelajaran</h2>
+          <div class="filter-row">
+            <input type="text" id="searchPelajaran" placeholder="Cari mata pelajaran / kelas...">
+            <select id="filterDayPelajaran">
+              <option value="">Semua hari</option>
+              <option>Senin</option><option>Selasa</option><option>Rabu</option>
+              <option>Kamis</option><option>Jumat</option><option>Sabtu</option>
+            </select>
+          </div>
+          <ul class="entry-list" id="pelajaranList"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TAB: UJIAN ================= -->
+  <div class="tab-panel" id="tab-ujian">
+    <div class="grid">
+      <div>
+        <div class="panel">
+          <h2 class="panel-title">Tambah Jadwal Ujian</h2>
+          <p class="panel-desc">Untuk ujian dengan tanggal spesifik (bukan berulang mingguan).</p>
+
+          <div class="field">
+            <label for="eSubject">Nama ujian / mata pelajaran</label>
+            <input type="text" id="eSubject" placeholder="Contoh: Ujian Tengah Semester Fisika">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="eClass">Kelas</label>
+              <input type="text" id="eClass" placeholder="Contoh: XI IPS 1">
+            </div>
+            <div class="field">
+              <label for="eSupervisor">Pengawas</label>
+              <input type="text" id="eSupervisor" placeholder="Nama pengawas">
+            </div>
+          </div>
+          <div class="field">
+            <label for="eDate">Tanggal</label>
+            <input type="date" id="eDate">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="eStart">Jam mulai</label>
+              <input type="time" id="eStart" value="08:00">
+            </div>
+            <div class="field">
+              <label for="eEnd">Jam selesai</label>
+              <input type="time" id="eEnd" value="09:30">
+            </div>
+          </div>
+          <div class="field">
+            <label for="eRoom">Ruangan</label>
+            <input type="text" id="eRoom" placeholder="Contoh: Aula">
+          </div>
+
+          <button class="btn btn-primary btn-full" id="btnAddUjian">Tambahkan ke Jadwal</button>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Data</h2>
+          <div class="btn-row">
+            <button class="btn btn-ghost" id="btnSampleUjian">Contoh Data</button>
+            <button class="btn btn-ghost" id="btnClearUjian">Hapus Semua</button>
+          </div>
+          <button class="btn btn-ghost btn-full" id="btnExportUjian" style="margin-top:10px;">Unduh .csv</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="panel" id="conflictPanelUjian" style="display:none;">
+          <h2 class="panel-title">⚠ Bentrok Terdeteksi</h2>
+          <p class="panel-desc">Ujian berikut memiliki ruangan atau kelas yang sama pada tanggal &amp; waktu yang tumpang tindih.</p>
+          <div id="conflictListUjian"></div>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Ujian Mendatang</h2>
+          <div id="upcomingGrid" class="upcoming-grid"></div>
+        </div>
+
+        <div class="panel">
+          <h2 class="panel-title">Daftar Jadwal Ujian</h2>
+          <div class="filter-row">
+            <input type="text" id="searchUjian" placeholder="Cari nama ujian / kelas...">
+            <select id="filterStatusUjian">
+              <option value="">Semua status</option>
+              <option value="upcoming">Akan datang</option>
+              <option value="today">Hari ini</option>
+              <option value="past">Sudah lewat</option>
+            </select>
+          </div>
+          <ul class="entry-list" id="ujianList"></ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="hint">Data jadwal disimpan sementara di peramban ini dan tidak dikirim ke server — unduh sebagai .csv untuk menyimpan secara permanen.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(id){ return document.getElementById(id); };
+
+  var DAYS = ["Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+  var PALETTE = ["#5B4FE8","#22B8CF","#F76707","#37B24D","#D6336C","#F08C00","#0CA678","#7048E8","#1C7ED6","#E64980"];
+
+  var pelajaranList = []; // {id, subject, class, teacher, day, start, end, room}
+  var ujianList = [];     // {id, subject, class, supervisor, date, start, end, room}
+  var subjectColors = {};
+  var uid = 1;
+
+  function colorFor(subject){
+    var key = subject.toLowerCase();
+    if(!subjectColors[key]){
+      var idx = Object.keys(subjectColors).length % PALETTE.length;
+      subjectColors[key] = PALETTE[idx];
+    }
+    return subjectColors[key];
+  }
+
+  function escapeHtml(str){
+    var div = document.createElement("div");
+    div.textContent = String(str);
+    return div.innerHTML;
+  }
+  function toMinutes(hhmm){
+    var parts = hhmm.split(":");
+    return parseInt(parts[0],10) * 60 + parseInt(parts[1],10);
+  }
+  function overlap(s1,e1,s2,e2){
+    return s1 < e2 && s2 < e1;
+  }
+
+  // ================= TABS =================
+  document.querySelectorAll(".tab-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".tab-btn").forEach(function(b){ b.classList.remove("active"); });
+      document.querySelectorAll(".tab-panel").forEach(function(p){ p.classList.remove("active"); });
+      btn.classList.add("active");
+      $("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ================= PELAJARAN LOGIC =================
+  function computeConflictsPelajaran(){
+    var conflicts = [];
+    for(var i = 0; i < pelajaranList.length; i++){
+      for(var j = i+1; j < pelajaranList.length; j++){
+        var a = pelajaranList[i], b = pelajaranList[j];
+        if(a.day !== b.day) continue;
+        var s1 = toMinutes(a.start), e1 = toMinutes(a.end);
+        var s2 = toMinutes(b.start), e2 = toMinutes(b.end);
+        if(!overlap(s1,e1,s2,e2)) continue;
+        if(a.room.toLowerCase() === b.room.toLowerCase()){
+          conflicts.push({a:a, b:b, reason:"ruangan " + a.room});
+        } else if(a.class.toLowerCase() === b.class.toLowerCase()){
+          conflicts.push({a:a, b:b, reason:"kelas " + a.class});
+        }
+      }
+    }
+    return conflicts;
+  }
+
+  function idsInConflict(conflicts){
+    var set = new Set();
+    conflicts.forEach(function(c){ set.add(c.a.id); set.add(c.b.id); });
+    return set;
+  }
+
+  function renderConflictsPelajaran(conflicts){
+    var panel = $("conflictPanelPelajaran");
+    if(conflicts.length === 0){ panel.style.display = "none"; return; }
+    panel.style.display = "block";
+    $("conflictListPelajaran").innerHTML = conflicts.map(function(c){
+      return '<div class="conflict-item"><span class="conflict-icon">!</span>' +
+        '<div><b>' + escapeHtml(c.a.subject) + '</b> (' + escapeHtml(c.a.day) + ' ' + c.a.start + '-' + c.a.end + ') bentrok dengan ' +
+        '<b>' + escapeHtml(c.b.subject) + '</b> (' + escapeHtml(c.b.day) + ' ' + c.b.start + '-' + c.b.end + ') pada ' + escapeHtml(c.reason) + '.</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function renderTimetable(conflictIds){
+    var startHour = 6, endHour = 18;
+    var totalMinutes = (endHour - startHour) * 60;
+    var pxPerMin = 1;
+    var heightPx = totalMinutes * pxPerMin;
+
+    var html = '<div class="tt-corner"></div>';
+    DAYS.forEach(function(d){ html += '<div class="tt-head">' + d + '</div>'; });
+
+    // axis column
+    html += '<div class="tt-axis" style="height:' + heightPx + 'px;">';
+    for(var h = startHour; h <= endHour; h++){
+      var top = (h - startHour) * 60 * pxPerMin;
+      html += '<div class="tt-axis-label" style="top:' + top + 'px;">' + String(h).padStart(2,"0") + ':00</div>';
+    }
+    html += '</div>';
+
+    DAYS.forEach(function(day){
+      html += '<div class="tt-day-col" style="height:' + heightPx + 'px;">';
+      pelajaranList.filter(function(p){ return p.day === day; }).forEach(function(p){
+        var s = Math.max(toMinutes(p.start), startHour*60);
+        var e = Math.min(toMinutes(p.end), endHour*60);
+        if(e <= s) return;
+        var top = (s - startHour*60) * pxPerMin;
+        var height = (e - s) * pxPerMin;
+        var isConflict = conflictIds.has(p.id);
+        html += '<div class="tt-block' + (isConflict ? ' conflict' : '') + '" style="top:' + top + 'px; height:' + Math.max(height,20) + 'px; background:' + colorFor(p.subject) + ';">' +
+          '<div class="tt-block-title">' + escapeHtml(p.subject) + '</div>' +
+          '<div class="tt-block-meta">' + escapeHtml(p.class) + ' &middot; ' + p.start + '-' + p.end + '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    });
+
+    $("timetableGrid").innerHTML = html;
+  }
+
+  function renderPelajaranList(conflictIds){
+    var search = $("searchPelajaran").value.trim().toLowerCase();
+    var dayFilter = $("filterDayPelajaran").value;
+
+    var list = pelajaranList.filter(function(p){
+      if(search && (p.subject.toLowerCase().indexOf(search) === -1 && p.class.toLowerCase().indexOf(search) === -1)) return false;
+      if(dayFilter && p.day !== dayFilter) return false;
+      return true;
+    });
+    list.sort(function(a,b){
+      var dayDiff = DAYS.indexOf(a.day) - DAYS.indexOf(b.day);
+      if(dayDiff !== 0) return dayDiff;
+      return toMinutes(a.start) - toMinutes(b.start);
+    });
+
+    var ul = $("pelajaranList");
+    if(list.length === 0){
+      ul.innerHTML = '<div class="empty-state"><div class="glyph">🗓</div><p>' +
+        (pelajaranList.length === 0 ? "Belum ada jadwal pelajaran. Tambahkan di panel kiri atau muat contoh data." : "Tidak ada jadwal yang cocok dengan filter.") +
+      '</p></div>';
+      return;
+    }
+
+    ul.innerHTML = list.map(function(p){
+      var isConflict = conflictIds.has(p.id);
+      return '<li class="entry-item">' +
+        '<div class="entry-color" style="background:' + colorFor(p.subject) + ';"></div>' +
+        '<div class="entry-main">' +
+          '<div class="entry-title">' + escapeHtml(p.subject) + '</div>' +
+          '<div class="entry-meta">' + escapeHtml(p.day) + ' ' + p.start + '-' + p.end + ' &middot; ' + escapeHtml(p.class) + ' &middot; ' + escapeHtml(p.room) + ' &middot; ' + escapeHtml(p.teacher) + '</div>' +
+        '</div>' +
+        '<span class="entry-badge ' + (isConflict ? "conflict" : "ok") + '">' + (isConflict ? "Bentrok" : "Aman") + '</span>' +
+        '<button class="entry-del" data-id="' + p.id + '" data-type="pelajaran" aria-label="Hapus">&times;</button>' +
+      '</li>';
+    }).join("");
+  }
+
+  function refreshPelajaran(){
+    var conflicts = computeConflictsPelajaran();
+    var conflictIds = idsInConflict(conflicts);
+    renderConflictsPelajaran(conflicts);
+    renderTimetable(conflictIds);
+    renderPelajaranList(conflictIds);
+  }
+
+  $("btnAddPelajaran").addEventListener("click", function(){
+    var subject = $("pSubject").value.trim();
+    var klass = $("pClass").value.trim();
+    var teacher = $("pTeacher").value.trim();
+    var day = $("pDay").value;
+    var start = $("pStart").value;
+    var end = $("pEnd").value;
+    var room = $("pRoom").value.trim();
+
+    if(!subject || !klass || !room || !start || !end || toMinutes(end) <= toMinutes(start)){
+      flashInvalid(["pSubject","pClass","pRoom"]);
+      return;
+    }
+
+    pelajaranList.push({ id: uid++, subject:subject, class:klass, teacher:teacher||"-", day:day, start:start, end:end, room:room });
+    colorFor(subject);
+
+    ["pSubject","pClass","pTeacher","pRoom"].forEach(function(id){ $(id).value = ""; });
+    refreshPelajaran();
+  });
+
+  function flashInvalid(ids){
+    ids.forEach(function(id){
+      var el = $(id);
+      if(!el.value){
+        el.style.borderColor = "var(--coral)";
+        setTimeout(function(){ el.style.borderColor = ""; }, 900);
+      }
+    });
+  }
+
+  $("pelajaranList").addEventListener("click", function(e){
+    var btn = e.target.closest(".entry-del");
+    if(!btn) return;
+    var id = parseInt(btn.dataset.id, 10);
+    pelajaranList = pelajaranList.filter(function(p){ return p.id !== id; });
+    refreshPelajaran();
+  });
+
+  $("btnClearPelajaran").addEventListener("click", function(){
+    pelajaranList = [];
+    refreshPelajaran();
+  });
+
+  $("btnSamplePelajaran").addEventListener("click", function(){
+    var sample = [
+      {subject:"Matematika", class:"X IPA 2", teacher:"Bu Sari", day:"Senin", start:"07:00", end:"08:30", room:"Ruang 12"},
+      {subject:"Bahasa Indonesia", class:"X IPA 2", teacher:"Pak Budi", day:"Senin", start:"08:30", end:"10:00", room:"Ruang 12"},
+      {subject:"Fisika", class:"X IPA 1", teacher:"Bu Wati", day:"Senin", start:"07:30", end:"09:00", room:"Ruang 12"},
+      {subject:"Kimia", class:"X IPA 2", teacher:"Pak Dedi", day:"Selasa", start:"07:00", end:"08:30", room:"Lab Kimia"},
+      {subject:"Bahasa Inggris", class:"X IPA 2", teacher:"Bu Rina", day:"Selasa", start:"09:00", end:"10:30", room:"Ruang 12"},
+      {subject:"Olahraga", class:"X IPA 2", teacher:"Pak Joko", day:"Rabu", start:"07:00", end:"08:30", room:"Lapangan"},
+      {subject:"Sejarah", class:"X IPA 2", teacher:"Bu Rina", day:"Kamis", start:"10:00", end:"11:30", room:"Ruang 12"},
+      {subject:"Biologi", class:"X IPA 2", teacher:"Bu Wati", day:"Jumat", start:"07:00", end:"08:30", room:"Lab Biologi"}
+    ];
+    sample.forEach(function(s){
+      pelajaranList.push({ id: uid++, subject:s.subject, class:s.class, teacher:s.teacher, day:s.day, start:s.start, end:s.end, room:s.room });
+      colorFor(s.subject);
+    });
+    refreshPelajaran();
+  });
+
+  $("btnExportPelajaran").addEventListener("click", function(){
+    if(pelajaranList.length === 0) return;
+    exportCsv(
+      [["Mata Pelajaran","Kelas","Guru","Hari","Jam Mulai","Jam Selesai","Ruangan"]].concat(
+        pelajaranList.map(function(p){ return [p.subject,p.class,p.teacher,p.day,p.start,p.end,p.room]; })
+      ),
+      "jadwal-pelajaran.csv"
+    );
+  });
+
+  ["searchPelajaran","filterDayPelajaran"].forEach(function(id){
+    $(id).addEventListener("input", refreshPelajaran);
+    $(id).addEventListener("change", refreshPelajaran);
+  });
+
+  // ================= UJIAN LOGIC =================
+  function computeConflictsUjian(){
+    var conflicts = [];
+    for(var i = 0; i < ujianList.length; i++){
+      for(var j = i+1; j < ujianList.length; j++){
+        var a = ujianList[i], b = ujianList[j];
+        if(a.date !== b.date) continue;
+        var s1 = toMinutes(a.start), e1 = toMinutes(a.end);
+        var s2 = toMinutes(b.start), e2 = toMinutes(b.end);
+        if(!overlap(s1,e1,s2,e2)) continue;
+        if(a.room.toLowerCase() === b.room.toLowerCase()){
+          conflicts.push({a:a, b:b, reason:"ruangan " + a.room});
+        } else if(a.class.toLowerCase() === b.class.toLowerCase()){
+          conflicts.push({a:a, b:b, reason:"kelas " + a.class});
+        }
+      }
+    }
+    return conflicts;
+  }
+
+  function renderConflictsUjian(conflicts){
+    var panel = $("conflictPanelUjian");
+    if(conflicts.length === 0){ panel.style.display = "none"; return; }
+    panel.style.display = "block";
+    $("conflictListUjian").innerHTML = conflicts.map(function(c){
+      return '<div class="conflict-item"><span class="conflict-icon">!</span>' +
+        '<div><b>' + escapeHtml(c.a.subject) + '</b> (' + formatDate(c.a.date) + ' ' + c.a.start + '-' + c.a.end + ') bentrok dengan ' +
+        '<b>' + escapeHtml(c.b.subject) + '</b> (' + formatDate(c.b.date) + ' ' + c.b.start + '-' + c.b.end + ') pada ' + escapeHtml(c.reason) + '.</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function formatDate(str){
+    var d = new Date(str + "T00:00:00");
+    return d.toLocaleDateString("id-ID", {day:"2-digit", month:"short", year:"numeric"});
+  }
+  function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function daysUntil(dateStr){
+    var today = new Date(todayStr() + "T00:00:00");
+    var target = new Date(dateStr + "T00:00:00");
+    return Math.round((target - today) / 86400000);
+  }
+  function examStatus(dateStr){
+    var d = daysUntil(dateStr);
+    if(d < 0) return "past";
+    if(d === 0) return "today";
+    return "upcoming";
+  }
+
+  function renderUpcoming(){
+    var upcoming = ujianList.filter(function(e){ return daysUntil(e.date) >= 0; })
+      .sort(function(a,b){ return daysUntil(a.date) - daysUntil(b.date) || toMinutes(a.start)-toMinutes(b.start); })
+      .slice(0,3);
+
+    var grid = $("upcomingGrid");
+    if(upcoming.length === 0){
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="glyph">📋</div><p>Belum ada ujian mendatang.</p></div>';
+      return;
+    }
+    grid.innerHTML = upcoming.map(function(e){
+      var d = daysUntil(e.date);
+      var label = d === 0 ? "Hari ini" : ("H-" + d);
+      return '<div class="upcoming-card" style="background:' + colorFor(e.subject) + ';">' +
+        '<div class="upcoming-days">' + label + '</div>' +
+        '<div class="upcoming-title">' + escapeHtml(e.subject) + '</div>' +
+        '<div class="upcoming-meta">' + formatDate(e.date) + ' &middot; ' + e.start + '-' + e.end + '</div>' +
+        '<div class="upcoming-meta">' + escapeHtml(e.class) + ' &middot; ' + escapeHtml(e.room) + '</div>' +
+      '</div>';
+    }).join("");
+  }
+
+  function renderUjianList(conflictIds){
+    var search = $("searchUjian").value.trim().toLowerCase();
+    var statusFilter = $("filterStatusUjian").value;
+
+    var list = ujianList.filter(function(e){
+      if(search && (e.subject.toLowerCase().indexOf(search) === -1 && e.class.toLowerCase().indexOf(search) === -1)) return false;
+      if(statusFilter && examStatus(e.date) !== statusFilter) return false;
+      return true;
+    });
+    list.sort(function(a,b){ return a.date.localeCompare(b.date) || toMinutes(a.start)-toMinutes(b.start); });
+
+    var ul = $("ujianList");
+    if(list.length === 0){
+      ul.innerHTML = '<div class="empty-state"><div class="glyph">📝</div><p>' +
+        (ujianList.length === 0 ? "Belum ada jadwal ujian. Tambahkan di panel kiri atau muat contoh data." : "Tidak ada ujian yang cocok dengan filter.") +
+      '</p></div>';
+      return;
+    }
+
+    ul.innerHTML = list.map(function(e){
+      var isConflict = conflictIds.has(e.id);
+      var status = examStatus(e.date);
+      var badgeClass = isConflict ? "conflict" : (status === "today" ? "today" : (status === "past" ? "ok" : "soon"));
+      var badgeText = isConflict ? "Bentrok" : (status === "today" ? "Hari ini" : (status === "past" ? "Selesai" : "H-" + daysUntil(e.date)));
+      return '<li class="entry-item">' +
+        '<div class="entry-color" style="background:' + colorFor(e.subject) + ';"></div>' +
+        '<div class="entry-main">' +
+          '<div class="entry-title">' + escapeHtml(e.subject) + '</div>' +
+          '<div class="entry-meta">' + formatDate(e.date) + ' ' + e.start + '-' + e.end + ' &middot; ' + escapeHtml(e.class) + ' &middot; ' + escapeHtml(e.room) + ' &middot; ' + escapeHtml(e.supervisor) + '</div>' +
+        '</div>' +
+        '<span class="entry-badge ' + badgeClass + '">' + badgeText + '</span>' +
+        '<button class="entry-del" data-id="' + e.id + '" data-type="ujian" aria-label="Hapus">&times;</button>' +
+      '</li>';
+    }).join("");
+  }
+
+  function refreshUjian(){
+    var conflicts = computeConflictsUjian();
+    var conflictIds = idsInConflict(conflicts);
+    renderConflictsUjian(conflicts);
+    renderUpcoming();
+    renderUjianList(conflictIds);
+  }
+
+  $("eDate").value = todayStr();
+
+  $("btnAddUjian").addEventListener("click", function(){
+    var subject = $("eSubject").value.trim();
+    var klass = $("eClass").value.trim();
+    var supervisor = $("eSupervisor").value.trim();
+    var date = $("eDate").value;
+    var start = $("eStart").value;
+    var end = $("eEnd").value;
+    var room = $("eRoom").value.trim();
+
+    if(!subject || !klass || !room || !date || !start || !end || toMinutes(end) <= toMinutes(start)){
+      flashInvalid(["eSubject","eClass","eRoom","eDate"]);
+      return;
+    }
+
+    ujianList.push({ id: uid++, subject:subject, class:klass, supervisor:supervisor||"-", date:date, start:start, end:end, room:room });
+    colorFor(subject);
+
+    ["eSubject","eClass","eSupervisor","eRoom"].forEach(function(id){ $(id).value = ""; });
+    $("eDate").value = todayStr();
+    refreshUjian();
+  });
+
+  $("ujianList").addEventListener("click", function(e){
+    var btn = e.target.closest(".entry-del");
+    if(!btn) return;
+    var id = parseInt(btn.dataset.id, 10);
+    ujianList = ujianList.filter(function(x){ return x.id !== id; });
+    refreshUjian();
+  });
+
+  $("btnClearUjian").addEventListener("click", function(){
+    ujianList = [];
+    refreshUjian();
+  });
+
+  $("btnSampleUjian").addEventListener("click", function(){
+    var today = new Date();
+    function offset(days){
+      var d = new Date(today);
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0,10);
+    }
+    var sample = [
+      {subject:"UTS Matematika", class:"X IPA 2", supervisor:"Bu Sari", date:offset(2), start:"08:00", end:"09:30", room:"Aula"},
+      {subject:"UTS Fisika", class:"X IPA 1", supervisor:"Bu Wati", date:offset(2), start:"08:00", end:"09:30", room:"Aula"},
+      {subject:"UTS Bahasa Inggris", class:"X IPA 2", supervisor:"Bu Rina", date:offset(3), start:"08:00", end:"09:30", room:"Ruang 12"},
+      {subject:"UTS Kimia", class:"X IPA 2", supervisor:"Pak Dedi", date:offset(5), start:"10:00", end:"11:30", room:"Lab Kimia"},
+      {subject:"Ujian Praktik Biologi", class:"X IPA 2", supervisor:"Bu Wati", date:offset(-1), start:"08:00", end:"10:00", room:"Lab Biologi"}
+    ];
+    sample.forEach(function(s){
+      ujianList.push({ id: uid++, subject:s.subject, class:s.class, supervisor:s.supervisor, date:s.date, start:s.start, end:s.end, room:s.room });
+      colorFor(s.subject);
+    });
+    refreshUjian();
+  });
+
+  $("btnExportUjian").addEventListener("click", function(){
+    if(ujianList.length === 0) return;
+    exportCsv(
+      [["Nama Ujian","Kelas","Pengawas","Tanggal","Jam Mulai","Jam Selesai","Ruangan"]].concat(
+        ujianList.map(function(e){ return [e.subject,e.class,e.supervisor,e.date,e.start,e.end,e.room]; })
+      ),
+      "jadwal-ujian.csv"
+    );
+  });
+
+  ["searchUjian","filterStatusUjian"].forEach(function(id){
+    $(id).addEventListener("input", refreshUjian);
+    $(id).addEventListener("change", refreshUjian);
+  });
+
+  // ================= EXPORT HELPER =================
+  function exportCsv(rows, filename){
+    var csv = rows.map(function(row){
+      return row.map(function(cell){
+        var v = String(cell).replace(/"/g,'""');
+        return /[",\n]/.test(v) ? '"' + v + '"' : v;
+      }).join(",");
+    }).join("\n");
+    var blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // ================= INIT =================
+  refreshPelajaran();
+  refreshUjian();
+})();
+</script>
+</body>
+</html>
